@@ -1,73 +1,75 @@
-combineKey = function(data){
-	newData = matrix(NA,nrow(data),ncol(data)+2)
-	numKeys = ncol(data)
-	# keyLen = rep(NA, numKeys)
-	# finalKey = rep(NA,nrow(data))
-	# for(i in 1: numKeys){
-		# tmp = unique(data[,i])
-		# keyLen[i] = length(tmp)
-		# keyitable = cbind(1:length(tmp),tmp[order(tmp)])
-		# newData[,i] = keyitable[match(data[,i], keyitable[,2]),1]
-	# }#i
-	newData[, 1:numKeys] = as.matrix(data)
-	newData[, numKeys+1]=1:nrow(data)
-	newData2 = newData[do.call(order, lapply(1:NCOL(newData), function(i) newData[, i])), ]
-	newData2[1, numKeys+2]=1
-	for(i in 2:nrow(newData2)){
-		if( sum(newData2[i,1:numKeys]> newData2[i-1,1:numKeys])>0 ){
-			newData2[i, numKeys+2]=newData2[i-1, numKeys+2]+1;
-		}else{
-			newData2[i, numKeys+2]=newData2[i-1, numKeys+2];
-		}
-	}#i
-	
-	return <- newData2[order(newData2[,numKeys+1]),numKeys+2]
-	
-}#function
+#----------------------------------------< plotting >-------------------------------------------#
+makeTransparent<-function(someColor, alpha=100)
+{
+  newColor<-col2rgb(someColor)
+  apply(newColor, 2, function(curcoldata){rgb(red=curcoldata[1], green=curcoldata[2],
+    blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
+}
 
+#----------------------------------------< fittness >-------------------------------------------#
+NSE=function(obs,y){
+	#assume no zero/NA/Inf, filtered, clean
+	obsM = mean(obs,na.rm=T)
+	return <- 1 - sum((obs-y)^2,na.rm=T)/sum((obs-obsM)^2,na.rm=T)
+}
 
+#----------------------------------------< I/O >-------------------------------------------#
+LIBread.csv=function(x,h=T){
+	#assume x is a the file name (text)
+	return <- read.csv(x,stringsAsFactors=F,header=h)
+}
 
-keyTable = function(data){
-	return <- cbind(1:ncol(data), colnames(data) )
+LIBread.table=function(x,h=T){
+	#assume x is a the file name (text)
+	return <- read.table(x,stringsAsFactors=F,header=h)
+}
+
+LIBconvertSingleExcelMDY2RecentDate=function(y){
+	# assume x is a just text string, not vector 
+	w=as.numeric(unlist(strsplit(y[1],"/")))
+	if(w[3]<1000){
+		#(year is 2 digit)
+		currentYear=as.numeric(format(Sys.Date(),"%y"))
+		if(w[3]>currentYear){w[3]=w[3]+1900}
+		else{w[3]=w[3]+2000}
+	}
+	return <- as.Date(paste(w[3],w[1],w[2],sep="-"),format="%Y-%m-%d")
 }
 
 
-mycor = function(x,y){
-	#assuming length(x) = length(y)
-	cond = (!is.na(x)) & (!is.na(y))
-	return <- cor(x[cond],y[cond])
-}
-
-
-corMatrix = function(data){
-	result = matrix(NA, ncol(data), ncol(data))
-	for(i in 1:ncol(data)){
-		for(j in 1:ncol(data)){
-			result[i,j]=cor(data[,i],data[,j])
-		}#j
-	}#i
-	colnames(result)=colnames(data)
-	rownames(result)=colnames(data)
-	return <- result
-}
-
-mySum = function(x,y){
+convertDateExcelMDY=function(x,beginningYY=19){
+	#assume x is a vector of text
+	# beginningYY 2 digit year (the front missing part)
 	
-	if(length(x)>1){
-		return(rowSums(cbind(x,y),na.rm=T))
+	w=as.numeric(unlist(strsplit(x[1],"/")))
+	if(w[3]>1000){
+		return <- as.Date(x,format="%m/%d/%Y")
 	}else{
-		if(is.na(x)){
-			return(y)
-		}else{
-			if(is.na(y)){
-				return(x)
-			}else{
-				return(x+y)
+		bYY = beginningYY
+		y = rep(as.Date("1900-01-01",format="%Y-%m-%d"),length(x))
+		for(i in 1:length(x)){
+			
+			newYYYY=0
+			w=as.numeric(unlist(strsplit(x[i],"/")))
+			if(w[3]<1000){
+				#2 digit
+				newYYYY =w[3]+ bYY*100
 			}
-		}
+			h = as.Date(paste(newYYYY,w[1],w[2],sep="-"),format="%Y-%m-%d")
+			if(i>1){
+				if(h<y[i-1]){
+					bYY= bYY+1
+					newYYYY =w[3]+ bYY*100
+					h = as.Date(paste(newYYYY,w[1],w[2],sep="-"),format="%Y-%m-%d")
+				}
+			}#i
+			y[i]=h
+	
+		}#i
+		return <-y
 	}
 }
-
+#----------------------------------------< algorithm >-------------------------------------------#
 smoothMean=function(x){
 	len = length(x)
 	y = rep(NA,len)
@@ -79,53 +81,26 @@ smoothMean=function(x){
 	return(y)
 }
 
-
-LinearLinkFunction = function(x,y,xx){
-	len = length(x)
-	slope = (y[2:len] - y[1:(len-1)])/(x[2:len] - x[1:(len-1)])
-	
-	if(xx<x[1] | xx>x[len]){ 
-		return <- 0.0; 
-	}else{ 
-		#{this is fuck up} #for(i in 1:(len-1)){ if(xx>=x[i] & xx<=x[i+1]){ return <- x[i]+slope[i]*(xx-x[i]); break;} } 
-		i = which(xx<=x)[1]
-		if(i==1){
-			return <- y[i]
-		}else{
-			return <- y[i-1]+slope[i-1]*(xx-x[i-1])
-		}
-	}
-	
-}#function
-
-
-
-
-makeTransparent<-function(someColor, alpha=100)
-{
-  newColor<-col2rgb(someColor)
-  apply(newColor, 2, function(curcoldata){rgb(red=curcoldata[1], green=curcoldata[2],
-    blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
-}
-
 grpSums=function(x,y){
 	grp = unique(y)
-	result=rep(NA,length(grp))
-	for(i in 1:length(grp)){
-		result[i]=sum(x[y==grp[i]],na.rm=T)
-	}
-	return(result)
+	result = tapply(x,INDEX=y, FUN=sum, na.rm=T)
+	return(result[match(grp,as.numeric(names(result))])
 }#function
 
 grpMeans=function(x,y){
 	grp = unique(y)
-	result=rep(NA,length(grp))
-	for(i in 1:length(grp)){
-		result[i]=mean(x[y==grp[i]],na.rm=T)
-	}
-	return(result)
+	result = tapply(x,INDEX=y, FUN=mean, na.rm=T)
+	return(result[match(grp,as.numeric(names(result))])
 }#function
 
+grpSDs=function(x,y){
+	grp = unique(y)
+	result = tapply(x,INDEX=y, FUN=sd, na.rm=T)
+	return(result[match(grp,as.numeric(names(result))])
+}#function
+		      
+		      
+		      
 grpStats=function(x,y){
 	grp = unique(y)
 	result=matrix(NA,length(grp),13); colnames(result)=c('grp','mean','sd','min','max','q0025','q010','q025','q050','q075','q090','q0975','len')
@@ -145,24 +120,7 @@ grpStats=function(x,y){
 }#function
 
 
-grpDelta=function(x,y){
-	grp = unique(y)
-	result=rep(NA,length(grp))
-	for(i in 1:length(grp)){
-		tmp = x[y==grp[i]] ## assume sorted
-		result[i]=tmp[length(tmp)]-tmp[1]
-	}
-	return(result)
-}#function
 
-grpSDs=function(x,y){
-	grp = unique(y)
-	result=rep(NA,length(grp))
-	for(i in 1:length(grp)){
-		result[i]=sd(x[y==grp[i]],na.rm=T)
-	}
-	return(result)
-}#function
 
 LIBlast=function(x){
 	return <- x[length(x)]
@@ -246,11 +204,7 @@ grpMaxs=function(x,y){
 }#function
 
 
-NSE=function(obs,y){
-	#assume no zero/NA/Inf, filtered, clean
-	obsM = mean(obs,na.rm=T)
-	return <- 1 - sum((obs-y)^2,na.rm=T)/sum((obs-obsM)^2,na.rm=T)
-}
+
 
 
 nonZeroRow=function(x){
@@ -297,61 +251,7 @@ colNorms=function(x){
 }
 
 
-LIBread.csv=function(x,h=T){
-	#assume x is a the file name (text)
-	return <- read.csv(x,stringsAsFactors=F,header=h)
-}
 
-LIBread.table=function(x,h=T){
-	#assume x is a the file name (text)
-	return <- read.table(x,stringsAsFactors=F,header=h)
-}
-
-LIBconvertSingleExcelMDY2RecentDate=function(y){
-	# assume x is a just text string, not vector 
-	w=as.numeric(unlist(strsplit(y[1],"/")))
-	if(w[3]<1000){
-		#(year is 2 digit)
-		currentYear=as.numeric(format(Sys.Date(),"%y"))
-		if(w[3]>currentYear){w[3]=w[3]+1900}
-		else{w[3]=w[3]+2000}
-	}
-	return <- as.Date(paste(w[3],w[1],w[2],sep="-"),format="%Y-%m-%d")
-}
-
-
-convertDateExcelMDY=function(x,beginningYY=19){
-	#assume x is a vector of text
-	# beginningYY 2 digit year (the front missing part)
-	
-	w=as.numeric(unlist(strsplit(x[1],"/")))
-	if(w[3]>1000){
-		return <- as.Date(x,format="%m/%d/%Y")
-	}else{
-		bYY = beginningYY
-		y = rep(as.Date("1900-01-01",format="%Y-%m-%d"),length(x))
-		for(i in 1:length(x)){
-			
-			newYYYY=0
-			w=as.numeric(unlist(strsplit(x[i],"/")))
-			if(w[3]<1000){
-				#2 digit
-				newYYYY =w[3]+ bYY*100
-			}
-			h = as.Date(paste(newYYYY,w[1],w[2],sep="-"),format="%Y-%m-%d")
-			if(i>1){
-				if(h<y[i-1]){
-					bYY= bYY+1
-					newYYYY =w[3]+ bYY*100
-					h = as.Date(paste(newYYYY,w[1],w[2],sep="-"),format="%Y-%m-%d")
-				}
-			}#i
-			y[i]=h
-	
-		}#i
-		return <-y
-	}
-}
 
 accumulate=function(x){
 	if(length(x)==1){
@@ -494,39 +394,7 @@ monthlyAnomaly=function(x,grp_mom,LTmonthlymean,LTmonthlyMM){
 }
 
 
-#----------------------
-next.perm <- function(p) {
-	n <- length(p)
-	i <- n - 1
-	r = TRUE
-	for(i in (n-1):1) {
-		if(p[i] < p[i+1]) {
-			r = FALSE
-			break
-		}
-	}
- 
-	j <- i + 1
-	k <- n
-	while(j < k) {
-		x <- p[j]
-		p[j] <- p[k]
-		p[k] <- x
-		j <- j + 1
-		k <- k - 1
-	}
- 
-	if(r) return(NULL)
- 
-	j <- n
-	while(p[j] > p[i]) j <- j - 1
-	j <- j + 1
- 
-	x <- p[i]
-	p[i] <- p[j]
-	p[j] <- x
-	return(p)
-}
+
 
 permutation = function(y) {
 	#assume y is a pattern already
