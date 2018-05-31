@@ -93,7 +93,7 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 			fittnessList[4:7]=c(rhessysNSE, rhessysLogNSE, rhessysSAE, rhessysdailyCDFfit ) #4<<------------------
 				
 		# ... weekly
-			rhessysWeekFlow =grpSums(rhessysDayFlow, calobs.dailytimeSeries$grp_week )
+			rhessysWeekFlow =grpSums(rhessysDayFlow, dailytimeSeries_$grp_week )
 		
 			# ... / ... NSE
 			rhessysSS = sum( weeklyDataQuality.weight*(calobsWeekFlow - rhessysWeekFlow)^2 )
@@ -122,7 +122,7 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 		
 		
 		# ... monthly
-			rhessysMonthFlow =grpSums(rhessysDayFlow, calobs.dailytimeSeries$grp_month )
+			rhessysMonthFlow =grpSums(rhessysDayFlow, dailytimeSeries_$grp_month )
 			rhessysSS = sum( monthlyDataQuality.weight*(calobsMonthFlow - rhessysMonthFlow)^2 )
 			rhessysNSE = 1 - rhessysSS/monthlyobsSS
 			rhessysSAE = sum(monthlyDataQuality.weight*abs(calobsMonthFlow - rhessysMonthFlow))
@@ -131,9 +131,9 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 		
 		
 		# ... yearly (water year)
-			rhessysYearFlow =grpSums(rhessysDayFlow, calobs.dailytimeSeries$grp_wateryear )
-			rhessysYearET =grpSums(rhessysDayET, calobs.dailytimeSeries$grp_wateryear )
-			rhessysYearRain = grpSums(rhessysDayRain, calobs.dailytimeSeries$grp_wateryear )
+			rhessysYearFlow =grpSums(rhessysDayFlow, dailytimeSeries_$grp_wateryear )
+			rhessysYearET =grpSums(rhessysDayET, dailytimeSeries_$grp_wateryear )
+			rhessysYearRain = grpSums(rhessysDayRain, dailytimeSeries_$grp_wateryear )
 			rhessysSS = sum( yearlyDataQuality.weight*(calobsYearFlow - rhessysYearFlow)^2 )
 			rhessysNSE = 1 - rhessysSS/yearlyobsSS
 			rhessysSAE = sum(yearlyDataQuality.weight*abs(calobsYearFlow - rhessysYearFlow))
