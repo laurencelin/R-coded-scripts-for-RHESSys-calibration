@@ -62,32 +62,26 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 	rhessysDayRain = rhessys_[,35]#rain
 	rhessysDayET = rhessys_[,14]+rhessys_[,16]#et
 
-	# ... / ... NSE
+	# ... / ... daily NSE
 			rhessysSS = sum( dailyDataQuality.weight*(calobsDayFlow - rhessysDayFlow)^2 )
 			rhessysNSE = 1 - rhessysSS/dailyobsSS
 			rhessysDayResidue = calobsDayFlow - rhessysDayFlow
 			
-			# ... / ... log NSE
+			# ... / ... daily log NSE
 			rhessysLogSS = sum( dailyDataQuality.weight*(log(calobsDayFlow) - log(rhessysDayFlow))^2 )
 			rhessysLogNSE = 1 - rhessysLogSS/dailyobsLogSS
 		
-			# ... / ... SAE --> change to flushness index (annually) << **** >>
-			#rhessysSAE = sum( abs(calobsDayFlow - rhessysDayFlow)) #<<--------------- original
-			flushness = matrix(NA, nrow=length(unique(dailytimeSeries_$grp_wateryear)), ncol=2)
+			# ... / ... flashness index  
+			flashness = matrix(NA, nrow=length(unique(dailytimeSeries_$grp_wateryear)), ncol=2)
 			for(fik in unique(dailytimeSeries_$grp_wateryear)){
 				tmpCond = dailytimeSeries_$grp_wateryear==fik
-				flushness[fik,] = c(
+				flashness[fik,] = c(
 					sum(abs( calobsDayFlow[tmpCond][2:sum(tmpCond)]-calobsDayFlow[tmpCond][1:(sum(tmpCond)-1)] ))/sum(calobsDayFlow[tmpCond]),
 					sum(abs( rhessysDayFlow[tmpCond][2:sum(tmpCond)]-rhessysDayFlow[tmpCond][1:(sum(tmpCond)-1)] ))/sum(rhessysDayFlow[tmpCond])
 				)
 			}#fik
-			rhessysSAE = mean(flushness[,1]) #obs
-		
-			# ... / ... dailyCDFfit --> change to flushness index (annually) << **** >>
-			#rhessysdailyCDF=ecdf(rhessysDayFlow)
-			#rhessysdailyCDFresult = rhessysdailyCDF(dailyflowpt)
-			#rhessysdailyCDFfit = sum(abs(dailyCDFresult-rhessysdailyCDFresult))
-			rhessysdailyCDFfit = mean(flushness[,2]) #predicted
+			rhessysSAE = mean(flashness[,1]) #obs flashness
+			rhessysdailyCDFfit = mean(flashness[,2]) # model flashness
 			
 			# ___________ 1:3
 			fittnessList[4:7]=c(rhessysNSE, rhessysLogNSE, rhessysSAE, rhessysdailyCDFfit ) #4<<------------------
@@ -104,22 +98,16 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 			rhessysLogSS = sum( weeklyDataQuality.weight*(log(calobsWeekFlow) - log(rhessysWeekFlow))^2 )
 			rhessysLogNSE = 1 - rhessysLogSS/weeklyobsLogSS
 			
-			# ... / ... SAE --> change to inversedNSE << **** >>
-			# rhessysSAE = sum(weeklyDataQuality.weight*abs(calobsWeekFlow - rhessysWeekFlow)) #<<--------------- original
+			# ... / ... inversedNSE 
 			rhessysSAE = 1- sum( weeklyDataQuality.weight*(1/calobsWeekFlow - 1/rhessysWeekFlow)^2 ) / sum( weeklyDataQuality.weight*(1/calobsWeekFlow - mean(1/calobsWeekFlow))^2 ) 
 			
-			
+			# ... / ... weekly CDF fit
 			rhessysweeklyCDF=ecdf(rhessysWeekFlow[minWeekCond])
 			rhessysweeklyCDFresult = rhessysweeklyCDF(flowpt)
-			rhessysweeklyCDFfit = 1-5*sum((weeklyCDFresult-rhessysweeklyCDFresult)^2 ) / sum((weeklyCDFresult- mean(weeklyCDFresult))^2 ) # --> r2 format << **** >>
-			#sum(weeklyCDFresult) #sum(abs(weeklyCDFresult-rhessysweeklyCDFresult))#/sum(weeklyCDFresult)
-			
-			
+			rhessysweeklyCDFfit = 1-5*sum((weeklyCDFresult-rhessysweeklyCDFresult)^2 ) / sum((weeklyCDFresult- mean(weeklyCDFresult))^2 ) 
+		
 			# ___________ 1:3
 			fittnessList[8:11]=c(rhessysNSE, rhessysLogNSE, rhessysSAE, rhessysweeklyCDFfit ) #<<-------------------
-		
-		
-		
 		
 		# ... monthly
 			rhessysMonthFlow =grpSums(rhessysDayFlow, dailytimeSeries_$grp_month )
@@ -127,7 +115,6 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 			rhessysNSE = 1 - rhessysSS/monthlyobsSS
 			rhessysSAE = sum(monthlyDataQuality.weight*abs(calobsMonthFlow - rhessysMonthFlow))
 			fittnessList[12:13]=c(rhessysNSE, rhessysSAE) #<----------------------
-		
 		
 		
 		# ... yearly (water year)
@@ -141,13 +128,6 @@ modelFittness = function( calobs_, rhessys_, dailytimeSeries_, DailyThreshold_=0
 			fittnessList[14:15]=c(rhessysNSE, rhessysSAE) #<----------------------
 		
 		### -----------------------------------------
-		# "bias","wbias","sbias", 18
-		# "runoffRatio","ETratio","ETcor","annualBalance", 22
-		# "s1","s2","s3","sv1","sv2","gw1","gw2")
-		# ... / ... hydro
-			#condWinter = dailytimeSeries_$grp_monthMM==12|dailytimeSeries_$grp_monthMM==1|dailytimeSeries_$grp_monthMM==2
-			
-			#holding = allBias(calobsWeekFlow, dailytimeSeries_$grp_weekMM, rhessysWeekFlow)
 			holding = allBias(calobsMonthFlow, dailytimeSeries_$grp_monthMM, rhessysMonthFlow)
 			fittnessList[16:18] = c(holding$bias,holding$wbias,holding$sbias)
 		
