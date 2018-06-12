@@ -38,7 +38,7 @@
 	sbatch_cluster_header = paste('sbatch -o ', outputFOLDER, '/log.txt -J p', jobIDnum ' --export=v=\'', sep='')
 	sbatch_cluster_end = '\' Rivanna_std.sh'
 	
-	bsub_cluster_header = paste('bsub -q day -G xxx_pi -M 1 -o ', outputFOLDER, '/log.txt', sep='') 
+	bsub_cluster_header = paste('bsub -q day -G xxx_pi -M 1 -o ', outputFOLDER, '/log.txt ./rhesys_bin ', sep='') 
 	bsub_cluster_end = ''
 	
 	local_header = './rhesys_bin '
