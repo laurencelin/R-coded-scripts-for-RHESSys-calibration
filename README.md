@@ -2,7 +2,7 @@
 
 Calibration scripts here need massive updates and re-organization (July 6, 2018).
 
-Organization is going to be platform oriented, offering the command GLUE & MCMC:  
+Organization is going to be platform oriented, offering the common GLUE & MCMC:  
 1) scripts (GLUE / MCMC) for local computers
 2) scripts for SBATCH/SLURM cluster systems
 3) scripts for BSUB cluster systems
