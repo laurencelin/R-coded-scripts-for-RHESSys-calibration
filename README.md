@@ -1,4 +1,7 @@
 # R-coded-scripts-for-RHESSys-calibration
+
+Calibration scripts here need massive updates and re-organization (July 6, 2018).
+
 The main script is CUS_RHESSys_MultipleCalibration_MCMC_parallel_MCMC_killdevil.r
 All other script with names began with "LIB_" are libraries of functions that would be used by the main script.
 Particularly, this MCMC calibration script is designed for UNC Killdevil computer clusters. 
