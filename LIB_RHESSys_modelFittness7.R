@@ -1,0 +1,193 @@
+
+arg=commandArgs(T)
+
+
+modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
+	print(DailyThreshold_)
+	
+	# timeTable_ is from LIB_dailyTimeSeries3 (a data.frame object)
+	MonthLen = c(31,28,31,30,31,30,31,31,30,31,30,31)
+	
+	calobsDayFlow = calobs_
+	calobsWeekFlow = tapply(calobsDayFlow, timeTable_$yy_woy, sum)
+	calobsMonthFlow = tapply(calobsDayFlow, timeTable_$yy_month, sum)
+	calobsYearFlow = tapply(calobsDayFlow, timeTable_$wy, sum)
+
+	dailyDataQuality = (calobsDayFlow> DailyThreshold_) 
+	dailyDataQuality.weight = dailyDataQuality/sum(dailyDataQuality)
+	dailyobsMean = sum(dailyDataQuality.weight *calobsDayFlow)
+	dailyobsSS = sum( dailyDataQuality.weight*(calobsDayFlow - dailyobsMean)^2 )
+	dailyobsLogMean = sum( dailyDataQuality.weight *log(calobsDayFlow) ) 
+	dailyobsLogSS = sum( dailyDataQuality.weight*(log(calobsDayFlow) - dailyobsLogMean)^2 )
+	
+	weeklyDataQuality = tapply(1:dim(timeTable_)[1], timeTable_$yy_woy, function(x){
+			len = 7;
+			return <- length(x)/len * (sum(calobsDayFlow[x]) > length(x)*DailyThreshold_)	
+		})
+	weeklyDataQuality.weight = weeklyDataQuality/sum(weeklyDataQuality)
+	weeklyobsMean = sum(weeklyDataQuality.weight *calobsWeekFlow)
+	weeklyobsSS = sum( weeklyDataQuality.weight*(calobsWeekFlow - weeklyobsMean)^2 )
+	weeklyobsLogMean = sum( weeklyDataQuality.weight *log(calobsWeekFlow) ) 
+	weeklyobsLogSS = sum( weeklyDataQuality.weight*(log(calobsWeekFlow) - weeklyobsLogMean)^2 )
+
+	monthlyDataQuality = tapply(1:dim(timeTable_)[1], timeTable_$yy_month, function(x){
+			len = ifelse(timeTable_$month[x[1]]==2 & timeTable_$year[x[1]]%%4==0,MonthLen[timeTable_$month[x[1]]]+1,MonthLen[timeTable_$month[x[1]]]);
+			return <- length(x)/len * (sum(calobsDayFlow[x]) > length(x)*DailyThreshold_)	
+		})
+	monthlyDataQuality.weight = monthlyDataQuality/sum(monthlyDataQuality)
+	monthlyobsMean=sum(monthlyDataQuality.weight*calobsMonthFlow)
+	monthlyobsSS = sum( monthlyDataQuality.weight*(calobsMonthFlow - monthlyobsMean)^2 )
+	
+	yearlyDataQuality = tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
+			len = ifelse((timeTable_$year[x[1]]+1)%%4==0,366,365);
+			return <- length(x)/len * (sum(calobsDayFlow[x]) > length(x)*DailyThreshold_)
+		}) 
+	yearlyDataQuality.weight = yearlyDataQuality/sum(yearlyDataQuality)		
+	yearlyobsMean=sum(yearlyDataQuality.weight* calobsYearFlow)
+	yearlyobsSS = sum( yearlyDataQuality.weight*(calobsYearFlow - yearlyobsMean)^2 )
+	
+	minWeekCond = calobsWeekFlow> DailyThreshold_*7
+	flowpt = exp(seq(round(log(min(calobsWeekFlow[minWeekCond]))),round(log(max(calobsWeekFlow[minWeekCond]))), 0.1)) 
+	weeklyCDF=ecdf(calobsWeekFlow)
+	weeklyCDFresult = weeklyCDF(flowpt)
+	
+	dailyflowpt = exp(seq(round(log(min(calobsDayFlow))),round(log(max(calobsDayFlow))), 0.1)) 
+	dailyCDF=ecdf(calobsDayFlow)
+	dailyCDFresult = dailyCDF(dailyflowpt)
+
+
+
+	#--------------------------------------------
+	fittnessList = rep(NA,26)
+	names(fittnessList)=c('one','two','three',
+		"dailyNSE","dailyLogNSE","meanAnnualFlushObs","meanAnnualFlushRHESSys",
+		"weeklyNSE","weeklyLogNSE","inversedweeklyNSE","weeklyCDFfitr2",
+		"monthlyNSE","monthlySAE",
+		"yearlyNSE","yearlySAE",
+		"bias","wbias","sbias",
+		"totPrecip","totET","totFlow","totFlowObs","RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP')
+	
+	rhessysDayFlow = rhessys_[,19]#flow
+	rhessysDayRain = rhessys_[,35]#rain
+	rhessysDayET = rhessys_[,14]+rhessys_[,16]#et
+
+	# ... / ... daily NSE
+			rhessysSS = sum( dailyDataQuality.weight*(calobsDayFlow - rhessysDayFlow)^2 )
+			fittnessList['dailyNSE'] = 1 - rhessysSS/dailyobsSS
+			
+			# ... / ... daily log NSE
+			rhessysLogSS = sum( dailyDataQuality.weight*(log(calobsDayFlow) - log(rhessysDayFlow))^2 )
+			fittnessList['dailyLogNSE'] = 1 - rhessysLogSS/dailyobsLogSS
+
+
+			### ---- annual flashing			
+			fittnessList['meanAnnualFlushObs'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
+				len = length(x); return <- sum(abs(calobsDayFlow[x[2:len]] - calobsDayFlow[x[1:(len-1)]])) / sum(calobsDayFlow[x])
+			}))
+			fittnessList['meanAnnualFlushRHESSys'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
+				len = length(x); return <- sum(abs(rhessysDayFlow[x[2:len]] - rhessysDayFlow[x[1:(len-1)]])) / sum(rhessysDayFlow[x])
+			}))			
+					
+				
+		# ... weekly
+			rhessysWeekFlow = tapply(rhessysDayFlow, timeTable_$yy_woy, sum)
+		
+			# ... / ... NSE
+			rhessysSS = sum( weeklyDataQuality.weight*(calobsWeekFlow - rhessysWeekFlow)^2 )
+			fittnessList['weeklyNSE'] = 1 - rhessysSS/weeklyobsSS
+			
+			# ... / ... log NSE
+			rhessysLogSS = sum( weeklyDataQuality.weight*(log(calobsWeekFlow) - log(rhessysWeekFlow))^2 )
+			fittnessList['weeklyLogNSE'] = 1 - rhessysLogSS/weeklyobsLogSS
+			
+			# ... / ... inversedNSE 
+			fittnessList['inversedweeklyNSE'] = 1 - sum( weeklyDataQuality.weight*(1/calobsWeekFlow - 1/rhessysWeekFlow)^2 ) / 
+				sum( weeklyDataQuality.weight*(1/calobsWeekFlow - mean(1/calobsWeekFlow))^2 ) 
+			
+			# ... / ... weekly CDF fit
+			rhessysweeklyCDF=ecdf(rhessysWeekFlow[minWeekCond])
+			rhessysweeklyCDFresult = rhessysweeklyCDF(flowpt)
+			fittnessList['weeklyCDFfitr2'] = 1-5*sum((weeklyCDFresult-rhessysweeklyCDFresult)^2 ) / sum((weeklyCDFresult- mean(weeklyCDFresult))^2 ) 
+		
+		
+		# ... monthly
+			rhessysMonthFlow = tapply(rhessysDayFlow, timeTable_$yy_month, sum)
+			rhessysSS = sum( monthlyDataQuality.weight*(calobsMonthFlow - rhessysMonthFlow)^2 )
+			fittnessList['monthlyNSE']  = 1 - rhessysSS/monthlyobsSS
+			fittnessList['monthlySAE']  = sum(monthlyDataQuality.weight*abs(calobsMonthFlow - rhessysMonthFlow))
+			
+		
+		# ... yearly (water year)
+			rhessysYearFlow = tapply(rhessysDayFlow, timeTable_$wy, sum)
+			rhessysYearET = tapply(rhessysDayET, timeTable_$wy, sum)
+			rhessysYearRain = tapply(rhessysDayRain, timeTable_$wy, sum)
+			rhessysSS = sum( yearlyDataQuality.weight*(calobsYearFlow - rhessysYearFlow)^2 )
+			fittnessList['yearlyNSE'] = 1 - rhessysSS/yearlyobsSS
+			fittnessList['yearlySAE'] = sum(yearlyDataQuality.weight*abs(calobsYearFlow - rhessysYearFlow))
+			
+		
+		### ... bias 
+			#fittnessList['bias'] = sum(yearlyDataQuality.weight * (rhessysYearFlow-calobsYearFlow)/calobsYearFlow) ## mean annual bias
+			fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
+			monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
+			selectcond = monthlybiasMM%in%c(12,1,2); fittnessList['wbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all winter months together
+			selectcond = monthlybiasMM%in%c(6,7,8); fittnessList['sbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all summer months together
+
+		
+		# total flux and ratios "totPrecip","totET","totFlow","totFlowObs","RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP')
+			fittnessList['totPrecip'] = sum(rhessysYearRain)
+			fittnessList['totET'] = sum(rhessysYearET)
+			fittnessList['totFlow'] = sum(rhessysYearFlow)
+			fittnessList['totFlowObs'] = sum(calobsYearFlow)
+			fittnessList['RHESSysRunoffRatio'] = mean(rhessysYearFlow/rhessysYearRain)
+			fittnessList['obsRunoffRatio'] = mean(calobsYearFlow/rhessysYearRain) 
+
+			approxET = sum(rhessysDayRain) - sum(calobsYearFlow)
+			fittnessList['ETbias'] = (sum(rhessysDayET)-approxET)/approxET
+			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushObs']-fittnessList['meanAnnualFlushRHESSys']
+
+
+		## these below will go away in the future
+		MCMC_fittnessList = rep(NA,10)
+		MCMC_fittnessList[1] = fittnessList['bias']
+		MCMC_fittnessList[2] = fittnessList['wbias']
+		MCMC_fittnessList[3] = fittnessList['sbias']
+		MCMC_fittnessList[4] = fittnessList['dailyNSE']
+		MCMC_fittnessList[5] = fittnessList['weeklyNSE']
+		MCMC_fittnessList[6] = fittnessList['monthlyNSE']
+		MCMC_fittnessList[7] = fittnessList['yearlyNSE']
+		MCMC_fittnessList[8] = fittnessList['weeklyCDFfitr2']
+		MCMC_fittnessList[9] = fittnessList['weeklyLogNSE']
+		MCMC_fittnessList[10] = fittnessList['ETbias']
+
+		MCMC_fittnessList2 = rep(NA,13)
+		MCMC_fittnessList2[1] = fittnessList['bias']
+		MCMC_fittnessList2[2] = fittnessList['wbias']
+		MCMC_fittnessList2[3] = fittnessList['sbias']
+		MCMC_fittnessList2[4] = fittnessList['inversedweeklyNSE'] 
+		MCMC_fittnessList2[5] = fittnessList['weeklyNSE']
+		MCMC_fittnessList2[6] = fittnessList['monthlyNSE']
+		MCMC_fittnessList2[7] = fittnessList['yearlyNSE']
+		MCMC_fittnessList2[8] = fittnessList['weeklyCDFfitr2'] 
+		MCMC_fittnessList2[9] = fittnessList['weeklyLogNSE']
+		MCMC_fittnessList2[10] = fittnessList['ETbias']
+		MCMC_fittnessList2[11] = fittnessList['dailyNSE']
+		MCMC_fittnessList2[12] = fittnessList['dailyLogNSE']
+		MCMC_fittnessList2[13] = fittnessList['flashCOMP']
+		
+
+	return<-list(
+		FittnessList=fittnessList[4:length(fittnessList)],
+		MCMC_fittnessList= MCMC_fittnessList,
+		MCMC_fittnessList2=MCMC_fittnessList2
+	)
+	
+}#
+
+
+
+
+	
+	
+	
+	
