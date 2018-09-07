@@ -13,16 +13,15 @@ library(MASS)
 arg=commandArgs(T)
 if(length(arg)<1){
 	arg=c(
-		#"/Users/laurencelin/Downloads/BAISMAN/rhessys_baisman10m", # 1 script_to_rhessysection location 
 		".", 									# 1 script_to_rhessysection location 
-		"usgs01583580.csv",						# 2 observed filename  
-		"2", 								  	# 3 starting iteration
+		"usgs01589290.csv",						# 2 observed filename  
+		"1", 								  	# 3 starting iteration
 		"20", 									# 4 ending iteration
 		"2011-1-1",								# 5 start date of fitting (not simulation start date!)
 		"2017-11-30",							# 6 end date of fitting
 		"output",								# 7 output folder name
-		"baisman10m",							# 8 prefix of the fitting table
-		"3",									# 9 number of proposed parameter values in one test
+		"SLB10m",								# 8 prefix of the fitting table
+		"2",									# 9 number of proposed parameter values in one test
 		"1293"									# 10 jobs ID number (use for clusters)
 	);paste(arg,collapse=" ")
 
@@ -48,18 +47,18 @@ append = F
 RHESSys_model = "./rhessys5.20.0.nighttime-evapFinal_debug2Final2_bioN_growthseason_shadedfraction"
 RHESSys_uncalibrated_arguments = paste(
 		"-st 2006 1 1 1 -ed 2017 12 1 1",
-		"-b",
+		"-b -sewer_flag -newcaprise -capr 0.001 -capMax 0.01 -slowDrain",
 		paste("-t ", "tecfiles/tec_daily.txt",sep=""),
 		paste("-w ", "worldfiles/worldfile",sep=""),
 		paste("-whdr ", "worldfiles/worldfile.hdr",sep=""),
-		paste("-r ", "flow/subsurfaceflow.txt",sep=""),
+		paste("-r ", "flows/subsurfaceflow.txt",sep=""),
 		#"-grassIrrigation_flag",
 		sep=' ')
 
 
 #====================================================================================================================#	
 	## ---- listing all RHESSys paramters, included optional / customized ones
-RHESSYS_PARAMS = c('s1','s2','s3','sv1','sv2','gw1','gw2','pondz','snowT','RTz','CAPr','snowEs')
+RHESSYS_PARAMS = c('s1','s2','s3','sv1','sv2','gw1','gw2','pondz','snowTs','rtz','capr','snowEs')
 iniParam = rep(1, length(RHESSYS_PARAMS)); names(iniParam)= RHESSYS_PARAMS
 iniParam['s1'] = 6.164172 #M --> control the water table depth; inital satz=0 and M control the lateral v vertical profile.
 iniParam['s2'] = 227.1263 #K
@@ -69,10 +68,10 @@ iniParam['sv2'] = 31.357
 iniParam['gw1'] = 0.006282594
 iniParam['gw2'] = 0.106507
 iniParam['pondz'] = 1
-iniParam['snowT'] = 1
+iniParam['snowTs'] = 1
 iniParam['snowEs'] = 0.28005
-iniParam['RTz'] = 1
-iniParam['CAPr'] = 1
+iniParam['rtz'] = 1
+iniParam['capr'] = 1
 
 	## ---- selecting parameters for calibration
 param.fittingNames =c('s1','sv1','snowEs','s3','gw1','gw2')
@@ -111,9 +110,9 @@ paramBoundary = matrix(NA,1+length(RHESSYS_PARAMS),2); rownames(paramBoundary)=c
 	paramBoundary['gw1',]=c(0.001,0.2)
 	paramBoundary['gw2',]=c(0.01,0.3) 
 	paramBoundary['pondz',]=c(0.01,5) 
-	paramBoundary['snowT',]=c(0.001,5) 
-	paramBoundary['RTz',]=c(0.001,5)
-	paramBoundary['CAPr',]=c(0,1)
+	paramBoundary['snowTs',]=c(0.001,5) 
+	paramBoundary['rtz',]=c(0.001,5)
+	paramBoundary['capr',]=c(0,1)
 	paramBoundary['snowEs',]=c(0.001,5) 
 
 paramRange = paramBoundary[,2]-paramBoundary[,1]
@@ -152,17 +151,17 @@ if(!append){
 	### start up first step
 	submitSimulation = '#!/bin/bash'
 	submitSimulation = c(submitSimulation, paste(
-		RHESSys_model, RHESSys_uncalibrated_arguments,
-		paste("-pre ", script_to_output,"/rhessys1",sep=""),
-		paste("-s", param[i,'s1'], param[i,'s2'], param[i,'s3']),
-		paste("-sv", param[i,'sv1'], param[i,'sv2']),
-		paste("-gw",param[i,'gw1'],param[i,'gw2']),	
-		ifelse('snowEs'%in%param.fittingNames, paste("-snowEs",param[i,'snowEs']), ''),
-		ifelse('snowTs'%in%param.fittingNames, paste("-snowTs",param[i,'snowT']), ''),
-		ifelse('RTz'%in%param.fittingNames, paste("-rtz",param[i,'RTz']), ''),
-		ifelse('CAPr'%in%param.fittingNames, paste("-capr",param[i,'CAPr']), ''),
+		RHESSys_model,' ', RHESSys_uncalibrated_arguments,' ',
+		paste("-pre ", script_to_output,"/rhessys1",sep=""),' ',
+		paste("-s", param[i,'s1'], param[i,'s2'], param[i,'s3']),' ',
+		paste("-sv", param[i,'sv1'], param[i,'sv2']),' ',
+		paste("-gw",param[i,'gw1'],param[i,'gw2']),	' ',
+		ifelse('snowEs'%in%param.fittingNames, paste("-snowEs",param[i,'snowEs'],' '), ''),
+		ifelse('snowTss'%in%param.fittingNames, paste("-snowTs",param[i,'snowTs'],' '), ''),
+		ifelse('rtz'%in%param.fittingNames, paste("-rtz",param[i,'rtz'],' '), ''),
+		ifelse('capr'%in%param.fittingNames, paste("-capr",param[i,'capr'],' '), ''),
 		'&',
-		sep=" "
+		sep=""
 	))
 	submitSimulation = c(submitSimulation,'wait')
 	write(submitSimulation,paste(script_to_rhessys,"/parallelRun", psbUniqueID,".sh",sep="")) 
@@ -280,7 +279,7 @@ if(length(Itr)>1){
 			}#kk
 			
 			cond=0;
-			if(param.fittingNames[j] %in% c('gw1', 's3', 'gw2','pondz','snowT','RTz','CAPr','snowEs')){ #need to change by names
+			if(param.fittingNames[j] %in% c('gw1', 's3', 'gw2','pondz','snowTs','rtz','capr','snowEs')){ #need to change by names
 				## single value propose
 				while(sum(cond)<numCore){
 					param.tmp = rnorm(10*numCore, param[i-1,param.fitting[j]], paramRange[param.fitting[j]]*0.1 )
@@ -336,17 +335,17 @@ if(length(Itr)>1){
 			submitSimulation = '#!/bin/bash'
 			for(kk in 1:numCore){
 				submitSimulation = c(submitSimulation, paste(
-					RHESSys_model, RHESSys_uncalibrated_arguments,
-					paste("-pre ",script_to_output,"/rhessys",Itr[i],"_",param.fitting[j],"_",kk,sep=""),
-					paste("-s", param.core[kk,'s1'], param.core[kk,'s2'], param.core[kk,'s3']),
-					paste("-sv", param.core[kk,'sv1'], param.core[kk,'sv2']),
-					paste("-gw", param.core[kk,'gw1'], param.core[kk,'gw2']),
-					ifelse('snowEs'%in%param.fittingNames, paste("-snowEs", param.core[kk,'snowEs']), ''),
-					ifelse('snowTs'%in%param.fittingNames, paste("-snowTs", param.core[kk,'snowT']), ''),
-					ifelse('RTz'%in%param.fittingNames, paste("-rtz", param.core[kk,'RTz']), ''),
-					ifelse('CAPr'%in%param.fittingNames, paste("-capr", param.core[kk,'CAPr']), ''),
+					RHESSys_model,' ', RHESSys_uncalibrated_arguments,' ',
+					paste("-pre ",script_to_output,"/rhessys",Itr[i],"_",param.fitting[j],"_",kk,sep=""),' ',
+					paste("-s", param.core[kk,'s1'], param.core[kk,'s2'], param.core[kk,'s3']),' ',
+					paste("-sv", param.core[kk,'sv1'], param.core[kk,'sv2']),' ',
+					paste("-gw", param.core[kk,'gw1'], param.core[kk,'gw2']),' ',
+					ifelse('snowEs'%in%param.fittingNames, paste("-snowEs", param.core[kk,'snowEs'],' '), ''),
+					ifelse('snowTss'%in%param.fittingNames, paste("-snowTs", param.core[kk,'snowTs'],' '), ''),
+					ifelse('rtz'%in%param.fittingNames, paste("-rtz", param.core[kk,'rtz'],' '), ''),
+					ifelse('capr'%in%param.fittingNames, paste("-capr", param.core[kk,'capr'],' '), ''),
 					'&',
-					 sep=" "
+					 sep=""
 				))			
 			}#kk
 			submitSimulation = c(submitSimulation,'wait')
@@ -417,7 +416,7 @@ if(length(Itr)>1){
 					accepted[j]=T
 					RhessysTable[j,] = tmpRhessysTable[topSelect,]
 					param[i, RHESSYS_PARAMS] = param.core[topSelect, RHESSYS_PARAMS]##<<------------------- fixed
-					system(paste("cp ", output,"/rhessys",Itr[i],"_",param.fitting[j],"_", topSelect,"_basin.daily ", 
+					system(paste("cp ", script_to_output,"/rhessys",Itr[i],"_",param.fitting[j],"_", topSelect,"_basin.daily ", 
 						script_to_output,"/rhessys",Itr[i],"_basin.daily",sep="") ) 
 				}
 			}else{
@@ -461,16 +460,15 @@ if(length(Itr)>1){
 	
 		##-------------------- plot ---------------------##
 		calobsDayFlow = calobs[calobs.dailytimeSeriesMatch,obsCol]
-		calobsWeekFlow = tapply(calobsDayFlow, calobs.dailytimeSeries$woy, sum)
-		calobsMonthFlow = tapply(calobsDayFlow, calobs.dailytimeSeries$month, sum)
+		calobsWeekFlow = tapply(calobsDayFlow, calobs.dailytimeSeries$yy_woy7, sum) ##<<<----- problem
+		calobsMonthFlow = tapply(calobsDayFlow, calobs.dailytimeSeries$yy_month, sum)
 		calobsYearFlow = tapply(calobsDayFlow, calobs.dailytimeSeries$wy, sum)
 	
 		rhessys = read.table(paste(script_to_output,"/rhessys",Itr[i],"_basin.daily",sep=""),header=F,skip=1)
 		rhessysDayFlow =rhessys[rhessys.dailytimeSeriesMatch,19]#flow
-		rhessysWeekFlow = tapply(rhessysDayFlow, calobs.dailytimeSeries$woy, sum)
-		rhessysMonthFlow = tapply(rhessysDayFlow, calobs.dailytimeSeries$month, sum)
+		rhessysWeekFlow = tapply(rhessysDayFlow, calobs.dailytimeSeries$yy_woy7, sum)
+		rhessysMonthFlow = tapply(rhessysDayFlow, calobs.dailytimeSeries$yy_month, sum)
 		rhessysYearFlow = tapply(rhessysDayFlow, calobs.dailytimeSeries$wy, sum)
-		rhessysDayResidue = rhessysDayFlow - calobsDayFlow
 		weeklyCDF=ecdf(calobsWeekFlow)
 		
 		## .... plot 1 (color = rhessys; black = obs)
@@ -479,46 +477,52 @@ if(length(Itr)>1){
 			layout(matrix(1:10,nrow=5,ncol=2,byrow=T))
 			par(mar=c(4,4,1,1) )
 			
-			yy1 = log(rhessysWeekFlow,10)
-			yy2 = log(calobsWeekFlow,10)
-			ymin = min(yy1,yy2)
-			ymax = max(yy1,yy2)
-			plot(yy2,type='l',xaxt='n',ylim=c(ymin,ymax) , xlab="",ylab="log weeklyflow",yaxt='n');lines(yy1,col='red'); axis(1, at= calobs.dailytimeSeries$ithweekisbeginWY, labels=calobs.dailytimeSeries $ithweekisbeginWYlbl,las=3);axis(2,at=round(ymin):round(ymax), labels=10^(round(ymin):round(ymax)) )
+			WPTIndex = tapply( seq_along(plotTime), calobs.dailytimeSeries$yy_woy7, function(x){x[1]})
+			MPTIndex = tapply( seq_along(plotTime), calobs.dailytimeSeries$yy_month, function(x){x[1]})
+			YPTIndex = tapply( seq_along(plotTime), calobs.dailytimeSeries$wy, function(x){x[1]})
 			
+			## ... daily log
 			yy1 = log(rhessysDayFlow,10)
 			yy2 = log(calobsDayFlow,10)
 			ymin = min(yy1,yy2)
 			ymax = max(yy1,yy2)
-			plot(yy2,type='l',xaxt='n',ylim=c(ymin,ymax),xlab="",ylab="log dailyflow" ,yaxt='n');lines(yy1,col='red'); axis(1, at= calobs.dailytimeSeries $ithdayisbeginWY, labels=calobs.dailytimeSeries $ithdayisbeginWYlbl);axis(2,at=round(ymin):round(ymax), labels=10^(round(ymin):round(ymax)) )
+			plot(plotTime, yy2,type='l',ylim=c(ymin,ymax),xlab="",ylab="log dailyflow" ,yaxt='n');
+			lines(plotTime, yy1,col='red');
+			axis(2,at=round(ymin):round(ymax), labels=10^(round(ymin):round(ymax)) )
 			
+			## ... weekly log
+			yy1 = log(rhessysWeekFlow,10)
+			yy2 = log(calobsWeekFlow,10)
+			ymin = min(yy1,yy2)
+			ymax = max(yy1,yy2)
+			plot(plotTime[WPTIndex], yy2, type='l',ylim=c(ymin,ymax) , xlab="",ylab="log weeklyflow",yaxt='n')
+			lines(plotTime[WPTIndex],yy1,col='red')
+			axis(2,at=round(ymin):round(ymax), labels=10^(round(ymin):round(ymax)) )
+			
+			## ... annual
 			ymin = min(rhessysYearFlow, calobsYearFlow)
 			ymax = max(rhessysYearFlow, calobsYearFlow)
-			plot(calobsYearFlow,type='l',xaxt='n',ylim=c(ymin,ymax), xlab="");lines(rhessysYearFlow,col='red'); axis(1, at=1:length(calobsYearFlow), labels=calobs.dailytimeSeries $grp_wateryearYYYY )
-			ymin = min(rhessysYearFlow, calobsYearFlow)
-			ymax = max(rhessysYearFlow, calobsYearFlow)
+			plot(plotTime[YPTIndex], calobsYearFlow,type='l',ylim=c(ymin,ymax), xlab="");
+			lines(plotTime[YPTIndex], rhessysYearFlow,col='red'); 
 			plot(rhessysYearFlow ,calobsYearFlow, ylim=c(ymin,ymax));abline(a=0,b=1,lty=2)
 			
+			## ... monthly
 			ymin = min(rhessysMonthFlow, calobsMonthFlow)
 			ymax = max(rhessysMonthFlow, calobsMonthFlow)
-			plot(calobsMonthFlow,type='l',xaxt='n',ylim=c(ymin,ymax), xlab="");lines(rhessysMonthFlow,col='red'); axis(1, at= calobs.dailytimeSeries$ithmonthisbeginWY, labels=calobs.dailytimeSeries $ithmonthisbeginWYlbl )
-			ymin = min(rhessysMonthFlow, calobsMonthFlow)
-			ymax = max(rhessysMonthFlow, calobsMonthFlow)
+			plot(plotTime[MPTIndex], calobsMonthFlow,type='l',ylim=c(ymin,ymax), xlab="");
+			lines(plotTime[MPTIndex], rhessysMonthFlow,col='red');
 			plot(rhessysMonthFlow ,calobsMonthFlow, ylim=c(ymin,ymax));abline(a=0,b=1,lty=2)
 			
 			ymin = min(rhessysWeekFlow, calobsWeekFlow)
 			ymax = max(rhessysWeekFlow, calobsWeekFlow)
-			plot(calobsWeekFlow,type='l',xaxt='n',ylim=c(ymin,ymax), xlab="");lines(rhessysWeekFlow,col='red'); axis(1, at= calobs.dailytimeSeries$ithweekisbeginWY, labels=calobs.dailytimeSeries $ithweekisbeginWYlbl )
-			###------------------------- log 
-			ymin = min(rhessysWeekFlow, calobsWeekFlow)
-			ymax = max(rhessysWeekFlow, calobsWeekFlow)
+			plot(plotTime[WPTIndex], calobsWeekFlow,type='l',ylim=c(ymin,ymax), xlab="");
+			lines(plotTime[WPTIndex], rhessysWeekFlow,col='red');
 			plot(rhessysWeekFlow ,calobsWeekFlow, ylim=c(ymin,ymax),xlim=c(ymin,ymax),log='xy');abline(a=0,b=1,lty=2)
 			
 			ymin = min(rhessysDayFlow, calobsDayFlow)
 			ymax = max(rhessysDayFlow, calobsDayFlow)
-			plot(calobsDayFlow,type='l',xaxt='n',ylim=c(ymin,ymax), xlab="");lines(rhessysDayFlow,col='red'); axis(1, at= calobs.dailytimeSeries $ithdayisbeginWY, labels=calobs.dailytimeSeries $ithdayisbeginWYlbl )
-			###------------------------- log 
-			ymin = min(rhessysDayFlow, calobsDayFlow)
-			ymax = max(rhessysDayFlow, calobsDayFlow)
+			plot(plotTime, calobsDayFlow,type='l',ylim=c(ymin,ymax), xlab="");
+			lines(plotTime, rhessysDayFlow,col='red');
 			plot(rhessysDayFlow ,calobsDayFlow, ylim=c(ymin,ymax),xlim=c(ymin,ymax),log='xy' );abline(a=0,b=1,lty=2)
 			dev.off()
 			
@@ -530,57 +534,54 @@ if(length(Itr)>1){
 			
 	
 			## ----- season plots
-			season = seasonalPatterns(calobsMonthFlow,calobs.dailytimeSeries$grp_monthMM,1:12)
-			seasonRhessys = seasonalPatterns(rhessysMonthFlow,calobs.dailytimeSeries$grp_monthMM,1:12)
+			season = t(simplify2array (tapply(calobsMonthFlow, calobs.dailytimeSeries$month[MPTIndex],function(x){ setNames(c(mean(x), quantile(x,c(0.025,0.975)), range(x)), c('mean','lower','upper','min','max'))}) ))
 			
-			ymax = max(season[,4], seasonRhessys[,4])
-			ymin = min(season[,5], seasonRhessys[,5])
-			plot(1:12 , season[,1] ,type='n',ylim=c(ymin,ymax),ylab="monthly streamflow (mm)", xlab="months",bty='l')
-			polygon(x=c(1:12,rev(1:12)), y=c(seasonRhessys[,2],rev(seasonRhessys[,3])),col=gray(0.8),border=NA )
-			points(1:12, season[,1], pch=4,lwd=3)
-			arrows(x0=1:12, y0= season[,2], y1= season[,3],code=3,length=0.04,angle=90)
-			#arrows(x0=1:12, y0= season[,5], y1= season[,4],code=3,length=0,angle=90,lty=3)
-			points(1:12, season[,5],cex=0.6)
-			points(1:12, season[,4],cex=0.6)
-			lines(1:12, seasonRhessys[,1],col=gray(0.4),lwd=2,lty=1)
+			seasonRhessys = t(simplify2array (tapply(rhessysMonthFlow, calobs.dailytimeSeries$month[MPTIndex],function(x){ setNames(c(mean(x), quantile(x,c(0.025,0.975)), range(x)), c('mean','lower','upper','min','max'))}) ))
+			
+			
+			ymax = max(season[,'max'], seasonRhessys[,'max'])
+			ymin = min(season[,'min'], seasonRhessys[,'min'])
+			plot(1:12 , season[,'mean'] ,type='n',ylim=c(ymin,ymax),ylab="monthly streamflow (mm)", xlab="months",bty='l')
+			polygon(x=c(1:12,rev(1:12)), y=c(seasonRhessys[,'lower'],rev(seasonRhessys[,'upper'])),col='red',border=NA,density=30)
+			points(1:12, season[,'mean'], pch=4,lwd=3)
+			arrows(x0=1:12, y0= season[,'lower'], y1= season[,'upper'],code=3,length=0.04,angle=90)
+			points(1:12, season[,'min'],cex=0.6)
+			points(1:12, season[,'max'],cex=0.6)
+			lines(1:12, seasonRhessys[,'mean'],col='red',lwd=2,lty=1)
 			
 			## ----- weekly plots
 			minWeekCond = calobsWeekFlow>0.008
-			flowpt = exp(seq(round(log(min(calobsWeekFlow[minWeekCond]))),round(log(max(calobsWeekFlow[minWeekCond]))), 0.1)) # exp{0.1*log(range)} -- heavy on small tail
+			flowpt = exp(seq(round(log(min(calobsWeekFlow[minWeekCond]))),round(log(max(calobsWeekFlow[minWeekCond]))), 0.1)) 
+			# exp{0.1*log(range)} -- heavy on small tail
 			anuualCDF=matrix(NA,length(calobsYearFlow),length(flowpt))
-			for(ii in 1:length(calobsYearFlow)){
-				hold=ecdf(calobsWeekFlow[calobs.dailytimeSeries$grp_weekWY==calobs.dailytimeSeries $grp_wateryearYYYY[ii]])
+			
+			for(ii in seq_along(YPTIndex)){
+				hold=ecdf( calobsWeekFlow[ calobs.dailytimeSeries$year[WPTIndex]==calobs.dailytimeSeries$year[YPTIndex][ii] ] )
 				anuualCDF[ii,]=hold(flowpt)
 			}#i
-			cdfMin = colMins(anuualCDF)
-			cdfMax = colMaxs(anuualCDF)
-			cdfMean = colMeans(anuualCDF)
-			cdfQ1= colQuants(anuualCDF,0.025)
-			cdfQ3= colQuants(anuualCDF,0.975)
+			
+			cdfMin = apply(anuualCDF,2,min)
+			cdfMax = apply(anuualCDF,2,max)
+			cdfMean = apply(anuualCDF,2,mean)
+			cdfQ1= apply(anuualCDF,2,quantile,0.025) 
+			cdfQ3= apply(anuualCDF,2,quantile,0.975)
 			
 			rhessysweeklyCDF=ecdf(rhessysWeekFlow)
 			rhessysanuualCDF=matrix(NA,length(calobsYearFlow),length(flowpt))
 			for(ii in 1:length(calobsYearFlow)){
-				hold=ecdf(rhessysWeekFlow[calobs.dailytimeSeries$grp_weekWY==calobs.dailytimeSeries $grp_wateryearYYYY[ii]])
+				hold=ecdf(rhessysWeekFlow[  calobs.dailytimeSeries$year[WPTIndex]==calobs.dailytimeSeries$year[YPTIndex][ii] ] )
 				rhessysanuualCDF[ii,]=hold(flowpt)
 			}#i
-			rhessys_cdfQ1= colQuants(rhessysanuualCDF,0.025)
-			rhessys_cdfQ3= colQuants(rhessysanuualCDF,0.975)
+			rhessys_cdfQ1= apply(rhessysanuualCDF,2,quantile,0.025) 
+			rhessys_cdfQ3= apply(rhessysanuualCDF,2,quantile,0.975) 
 			
 			plot(  (flowpt), weeklyCDF(flowpt),type='n',lwd=3 , xlab="weekly streamflow (mm)",ylab='freq',bty='l');
-			polygon(x=c((flowpt),rev((flowpt))), y=c(rhessys_cdfQ1, rev(rhessys_cdfQ3)),col=gray(0.8),border=NA)
+			polygon(x=c((flowpt),rev((flowpt))), y=c(rhessys_cdfQ1, rev(rhessys_cdfQ3)),col='red',border=NA, density=30)
 			polygon(x=c((flowpt),rev((flowpt))), y=c(cdfQ1, rev(cdfQ3)),density=20,border=NA,angle=135)
 			lines( (flowpt), weeklyCDF(flowpt),lwd=3)
-			lines( (flowpt), rhessysweeklyCDF(flowpt),col=gray(0.4),lwd=2) ##<<<__--
+			lines( (flowpt), rhessysweeklyCDF(flowpt),col='red',lwd=2) ##<<<__--
 			dev.off()
 		
-			
-			## .... plot 3
-			output = paste(script_to_output,"/rhessys",Itr[i],"_plot_", matchYears[1],"_",matchYears[2],"_style3.pdf",sep="")
-			pdf(output,height=6,width=6)
-			par(mar=c(4,4,1,1) )
-			plot(rhessysDayFlow, rhessysDayResidue)
-			dev.off()
 			
 	}#i Itr
 }## Itr check
