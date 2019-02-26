@@ -16,7 +16,7 @@ modelPlotStyle2 = function( calobs_, rhessys_, dailytimeSeries_, output){
 	day_plottime = as.Date(paste(dailytimeSeries_ $day, dailytimeSeries_ $month, dailytimeSeries_ $year,sep="-"),format="%d-%m-%Y")
 	week_plottime = day_plottime[tapply(seq_along(day_plottime), dailytimeSeries_ $yy_woy, function(dd){dd[1]})]
 	month_plottime = day_plottime[tapply(seq_along(day_plottime), dailytimeSeries_ $yy_month, function(dd){dd[1]})]
-	year_plottime = day_plottime[tapply(seq_along(day_plottime), dailytimeSeries_ $yy_month, function(dd){dd[1]})]
+	year_plottime = day_plottime[tapply(seq_along(day_plottime), dailytimeSeries_ $wy, function(dd){dd[1]})]
 	
 	
 	pdf(output,height=9,width=8)
