@@ -2,6 +2,59 @@
 arg=commandArgs(T)
 
 
+#====================================================================================================================#
+FITTNESS_NAMES = c('bias','wbias','sbias','inversedweeklyNSE','weeklyNSE','monthlyNSE','yearlyNSE','weeklyCDFfitr2','weeklyLogNSE','ETbias','dailyNSE','dailyLogNSE','flashCOMP')
+#exp and gamma based
+betaShape1 = rep(NA,length(FITTNESS_NAMES) ); names(betaShape1)= FITTNESS_NAMES
+betaShape1['bias'] = 1/5
+betaShape1['wbias'] = 1/3
+betaShape1['sbias'] = 1/3
+betaShape1['inversedweeklyNSE'] = 5
+betaShape1['weeklyNSE'] = 5
+betaShape1['monthlyNSE'] = 5
+betaShape1['yearlyNSE'] = 5
+betaShape1['weeklyCDFfitr2'] = 5
+betaShape1['weeklyLogNSE'] = 3.5
+betaShape1['ETbias'] = 1/2
+betaShape1['dailyNSE'] = 5
+betaShape1['dailyLogNSE'] = 5
+betaShape1['flashCOMP'] = 1/5
+# xx = seq(0.001,1,0.001); plot(xx, dgamma(xx,shape=1/2,scale=1), type='l' ); lines(xx,dgamma(xx,shape=1/5,scale=1),col='red')
+# xx = seq(0.001,1,0.001); plot(xx, dexp(1-xx,rate=6), type='l' )
+
+fittnessChoice=rep(T, length(betaShape1)); names(fittnessChoice)= FITTNESS_NAMES
+fittnessChoice['flashCOMP']=F
+
+
+fittness_Overall = function(fittnessValues,choice_){
+			
+	# exp and gamma based
+	fittnessLikilhood = c(
+		dgamma(abs(fittnessValues['bias']),shape=betaShape1['bias'], scale=1), # bias
+		dgamma(abs(fittnessValues['wbias']),shape=betaShape1['wbias'], scale=1), # wbias
+		dgamma(abs(fittnessValues['sbias']),shape=betaShape1['sbias'], scale=1), # sbias
+		dexp(1-fittnessValues['inversedweeklyNSE'], rate =betaShape1['inversedweeklyNSE']), # daily NSE => inversed NSE
+		dexp(1-fittnessValues['weeklyNSE'], rate =betaShape1['weeklyNSE']), # weekly NSE
+		dexp(1-fittnessValues['monthlyNSE'], rate =betaShape1['monthlyNSE']), # monthly NSE
+		dexp(1-fittnessValues['yearlyNSE'], rate =betaShape1['yearlyNSE']), # yearly NSE
+		dexp(1-fittnessValues['weeklyCDFfitr2'], rate =betaShape1['weeklyCDFfitr2']), # daily log NSE ==> weeklyCDFfit
+		dexp(1-fittnessValues['weeklyLogNSE'], rate =betaShape1['weeklyLogNSE']), # weekly log NSE
+		dgamma(abs(fittnessValues['ETbias']),shape=betaShape1['ETbias'], scale=1),
+		dexp(1-fittnessValues['dailyNSE'], rate =betaShape1['dailyNSE']), # daily NSE
+		dexp(1-fittnessValues['dailyLogNSE'], rate =betaShape1['dailyLogNSE']), # daily log NSE
+		dgamma(abs(fittnessValues['flashCOMP']),shape=betaShape1['flashCOMP'], scale=1) #	
+	); names(fittnessLikilhood) = FITTNESS_NAMES
+		
+	likilhood = prod(fittnessLikilhood[choice_])
+	
+	# return<-list(
+		# fittnessLikilhood=fittnessLikilhood, 
+		# likilhood=likilhood, 
+		# Loglikilhood=log(likilhood))
+	return <- log(likilhood)
+}#function
+
+#====================================================================================================================#
 modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 	print(DailyThreshold_)
 	
@@ -58,14 +111,15 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 
 
 	#--------------------------------------------
-	fittnessList = rep(NA,26)
-	names(fittnessList)=c('one','two','three',
+	fittnessList = rep(NA,24)
+	names(fittnessList)=c(
 		"dailyNSE","dailyLogNSE","meanAnnualFlushObs","meanAnnualFlushRHESSys",
 		"weeklyNSE","weeklyLogNSE","inversedweeklyNSE","weeklyCDFfitr2",
 		"monthlyNSE","monthlySAE",
 		"yearlyNSE","yearlySAE",
 		"bias","wbias","sbias",
-		"totPrecip","totET","totFlow","totFlowObs","RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP')
+		"totPrecip","totET","totFlow","totFlowObs",
+		"RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP','loglikelihood')
 	
 	rhessysDayFlow = rhessys_[,19]#flow
 	rhessysDayRain = rhessys_[,35]#rain
@@ -129,6 +183,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 		### ... bias 
 			#fittnessList['bias'] = sum(yearlyDataQuality.weight * (rhessysYearFlow-calobsYearFlow)/calobsYearFlow) ## mean annual bias
 			fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
+			#fittnessList['bias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
 			monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
 			selectcond = monthlybiasMM%in%c(12,1,2); fittnessList['wbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all winter months together
 			selectcond = monthlybiasMM%in%c(6,7,8); fittnessList['sbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all summer months together
@@ -146,7 +201,9 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 			fittnessList['ETbias'] = (sum(rhessysDayET)-approxET)/approxET
 			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushObs']-fittnessList['meanAnnualFlushRHESSys']
 
-
+		## 
+		fittnessList['loglikelihood'] = fittness_Overall(fittnessList, fittnessChoice)
+		
 		## these below will go away in the future
 		MCMC_fittnessList = rep(NA,10)
 		MCMC_fittnessList[1] = fittnessList['bias']
