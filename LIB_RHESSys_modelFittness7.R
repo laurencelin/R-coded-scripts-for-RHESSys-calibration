@@ -234,7 +234,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 		
 
 	return<-list(
-		FittnessList=fittnessList[4:length(fittnessList)],
+		FittnessList=fittnessList,
 		MCMC_fittnessList= MCMC_fittnessList,
 		MCMC_fittnessList2=MCMC_fittnessList2
 	)
