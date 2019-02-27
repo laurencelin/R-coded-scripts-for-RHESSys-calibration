@@ -5,13 +5,13 @@
 	paramBoundary = matrix(NA,8,2)
 	rownames(paramBoundary)=c('s1','s2','s3','sv1','sv2','gw1','gw2', 'snowenergy')
 	colnames(paramBoundary)=c('min','max')
-	paramBoundary[1,]=c(2,20.0) #s1
-	paramBoundary[2,]=c(50,300.0) #s2
+	paramBoundary[1,]=c(0.001,20) #s1
+	paramBoundary[2,]=c(0.1,300.0) #s2
 	paramBoundary[3,]=c(0.1,1) #s3 
-	paramBoundary[4,]=c(0.0001,0.08) #sv1
-	paramBoundary[5,]=c(1.0,300.0) #sv2
-	paramBoundary[6,]=c(0.01,0.1) #gw1 
-	paramBoundary[7,]=c(0.01,0.99) #gw2 
+	paramBoundary[4,]=c(0.001,20) #sv1
+	paramBoundary[5,]=c(0.1,300.0) #sv2
+	paramBoundary[6,]=c(0.001,0.2) #gw1 
+	paramBoundary[7,]=c(0.001,0.2) #gw2 
 	paramBoundary[8,]=c(0.5,2) #snowenergy
 	
 
@@ -20,6 +20,7 @@
 	outputfile = 'parallelRun103.sh'
 	jobIDnum = 12323
 	outputFOLDER = 'output'
+	
 	itr = 1:500
 	param = cbind(
 		itr,
@@ -41,7 +42,7 @@
 	bsub_cluster_header = paste('bsub -q day -G xxx_pi -M 1 -o ', outputFOLDER, '/log.txt ./rhesys_bin ', sep='') 
 	bsub_cluster_end = ''
 	
-	local_header = './rhesys_bin '
+	local_header = './rhessys_bin '
 	local_end = ''
 		
 ########## writing the script
