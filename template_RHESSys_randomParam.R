@@ -55,9 +55,9 @@ write('#!/bin/bash', outputfile, append=F)
 for(i in 1:length(itr)){
 	 
 	RHESSys_arg = paste(
-		'-st 1985 1 1 1 -ed 2011 10 1 1',
+		'-st 1995 1 1 1 -ed 2011 10 1 1',
 		'-b -t tecfiles/tec_daily.txt',
-		'-w worldfiles_ws18/combine_oldwayRZ5_soiltest3b',
+		'-w worldfiles/combine_oldwayRZ5_soiltest3b',
 		'-whdr worldfiles_ws18/ws18Bolstadcomb.hdr',
 		'-r flow_ws18/ws18Bolstad.flow',
 		'-pre', paste(outputFOLDER,'/rhessys',param[i,1],sep=''),
