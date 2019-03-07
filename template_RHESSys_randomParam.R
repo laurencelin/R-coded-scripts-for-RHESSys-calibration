@@ -21,7 +21,7 @@ RHESSysParamBoundaryDefault $snowTs = c(0.5,2)
 RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 	
 	
-	jobIDnum = as.numeric(Sys.time())
+	jobIDnum = floor(as.numeric(Sys.time()))
 	
 	sbatch_cluster_header = paste('sbatch -o ', outputFOLDER, '/log.txt -J p', jobIDnum, ' --export=v=\'', sep='')
 	sbatch_cluster_end = '\' Rivanna_std.sh'
