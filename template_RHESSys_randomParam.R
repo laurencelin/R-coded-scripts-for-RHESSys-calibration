@@ -58,8 +58,8 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 			cmd_header, 
 			paste(
 				RHESSys_arg, 
-				'-pre', paste(outputFOLDER,'/rhessys',param[i,1],sep=''),
-				AllparamLine
+				'-pre', paste(outputFOLDER,'/rhessys',param[i,'itr'],sep=''),
+				AllparamLine[i]
 			), 
 			cmd_end, sep='')
 		
