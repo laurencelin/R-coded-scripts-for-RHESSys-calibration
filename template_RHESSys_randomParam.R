@@ -25,7 +25,7 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 	
 	sbatch_cluster_header = paste('sbatch -o ', outputFOLDER, '/log.txt -J p', jobIDnum, ' --export=v=\'', sep='')
 	sbatch_cluster_end = '\' Rivanna_std.sh'
-	cmd_header = sbatch_cluster_header
+	cmd_header = sbatch_cluster_header;
 	cmd_end = sbatch_cluster_end
 	
 	
