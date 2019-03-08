@@ -203,8 +203,8 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 
 			approxET = sum(rhessysDayRain) - sum(calobsYearFlow)
 			fittnessList['ETbias'] = (sum(rhessysDayET)-approxET)/approxET
-			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushObs']-fittnessList['meanAnnualFlushRHESSys']
-			fittnessList['wbias'] = fittnessList['flashCOMP'] ## do it for now
+			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushRHESSys']-fittnessList['meanAnnualFlushObs']
+			fittnessList['wbias'] = fittnessList['flashCOMP']/fittnessList['meanAnnualFlushObs'] ## do it for now
 		## 
 		fittnessList['loglikelihood'] = fittness_Overall(fittnessList, fittnessChoice)
 		
