@@ -6,9 +6,9 @@ arg=commandArgs(T)
 FITTNESS_NAMES = c('bias','wbias','sbias','inversedweeklyNSE','weeklyNSE','monthlyNSE','yearlyNSE','weeklyCDFfitr2','weeklyLogNSE','ETbias','dailyNSE','dailyLogNSE','flashCOMP')
 #exp and gamma based
 betaShape1 = rep(NA,length(FITTNESS_NAMES) ); names(betaShape1)= FITTNESS_NAMES
-betaShape1['bias'] = 1/5
-betaShape1['wbias'] = 1/3
-betaShape1['sbias'] = 1/3
+betaShape1['bias'] = 1/20 #1/5
+betaShape1['wbias'] = 1/10 #1/3
+betaShape1['sbias'] = 1/10 #1/3
 betaShape1['inversedweeklyNSE'] = 5
 betaShape1['weeklyNSE'] = 5
 betaShape1['monthlyNSE'] = 5
@@ -30,9 +30,12 @@ fittness_Overall = function(fittnessValues,choice_){
 			
 	# exp and gamma based
 	fittnessLikilhood = c(
-		dgamma(abs(fittnessValues['bias']),shape=betaShape1['bias'], scale=1), # bias
-		dgamma(abs(fittnessValues['wbias']),shape=betaShape1['wbias'], scale=1), # wbias
-		dgamma(abs(fittnessValues['sbias']),shape=betaShape1['sbias'], scale=1), # sbias
+		#dgamma(abs(fittnessValues['bias']),shape=betaShape1['bias'], scale=1), # bias
+		#dgamma(abs(fittnessValues['wbias']),shape=betaShape1['wbias'], scale=1), # wbias
+		#dgamma(abs(fittnessValues['sbias']),shape=betaShape1['sbias'], scale=1), # sbias
+		dnorm(abs(fittnessValues['bias']),sd=betaShape1['bias'], mean=0), # bias
+		dnorm(abs(fittnessValues['wbias']),sd=betaShape1['wbias'], mean=0), # wbias
+		dnorm(abs(fittnessValues['sbias']),sd=betaShape1['sbias'], mean=0), # sbias
 		dexp(1-fittnessValues['inversedweeklyNSE'], rate =betaShape1['inversedweeklyNSE']), # daily NSE => inversed NSE
 		dexp(1-fittnessValues['weeklyNSE'], rate =betaShape1['weeklyNSE']), # weekly NSE
 		dexp(1-fittnessValues['monthlyNSE'], rate =betaShape1['monthlyNSE']), # monthly NSE
