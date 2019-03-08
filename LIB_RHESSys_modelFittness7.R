@@ -6,7 +6,7 @@ arg=commandArgs(T)
 FITTNESS_NAMES = c('bias','wbias','sbias','inversedweeklyNSE','weeklyNSE','monthlyNSE','yearlyNSE','weeklyCDFfitr2','weeklyLogNSE','ETbias','dailyNSE','dailyLogNSE','flashCOMP')
 #exp and gamma based
 betaShape1 = rep(NA,length(FITTNESS_NAMES) ); names(betaShape1)= FITTNESS_NAMES
-betaShape1['bias'] = 1/20 #1/5
+betaShape1['bias'] = 1/10 #1/5
 betaShape1['wbias'] = 1/10 #1/3
 betaShape1['sbias'] = 1/10 #1/3
 betaShape1['inversedweeklyNSE'] = 5
