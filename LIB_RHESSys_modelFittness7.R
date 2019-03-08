@@ -184,7 +184,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 			#fittnessList['bias'] = sum(yearlyDataQuality.weight * (rhessysYearFlow-calobsYearFlow)/calobsYearFlow) ## mean annual bias
 			fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
 			fittnessList['wbias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
-			fittnessList['wbias'] = mean( abs(rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
+			fittnessList['sbias'] = mean( abs(rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
 	
 			#monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
 			#	selectcond = monthlybiasMM%in%c(12,1,2); 
