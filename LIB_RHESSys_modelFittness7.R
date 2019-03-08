@@ -182,11 +182,15 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 		
 		### ... bias 
 			#fittnessList['bias'] = sum(yearlyDataQuality.weight * (rhessysYearFlow-calobsYearFlow)/calobsYearFlow) ## mean annual bias
-			#fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
-			fittnessList['bias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
-			monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
-			selectcond = monthlybiasMM%in%c(12,1,2); fittnessList['wbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all winter months together
-			selectcond = monthlybiasMM%in%c(6,7,8); fittnessList['sbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all summer months together
+			fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
+			fittnessList['wbias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
+			fittnessList['wbias'] = mean( abs(rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
+	
+			#monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
+			#	selectcond = monthlybiasMM%in%c(12,1,2); 
+			#fittnessList['wbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all winter months together
+			#	selectcond = monthlybiasMM%in%c(6,7,8); 
+			#fittnessList['sbias'] = sum(rhessysMonthFlow[selectcond] - calobsMonthFlow[selectcond])/sum(calobsMonthFlow[selectcond]) # all summer months together
 
 		
 		# total flux and ratios "totPrecip","totET","totFlow","totFlowObs","RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP')
