@@ -183,7 +183,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 		### ... bias 
 			#fittnessList['bias'] = sum(yearlyDataQuality.weight * (rhessysYearFlow-calobsYearFlow)/calobsYearFlow) ## mean annual bias
 			fittnessList['bias'] = sum(rhessysYearFlow-calobsYearFlow)/sum(calobsYearFlow) ## all years together
-			fittnessList['wbias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
+			#fittnessList['wbias'] = mean( (rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
 			fittnessList['sbias'] = mean( abs(rhessysYearFlow-calobsYearFlow)/calobsYearFlow ) ## each year
 	
 			#monthlybiasMM = tapply(timeTable_$month, timeTable_$yy_month, mean)	
@@ -204,7 +204,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 			approxET = sum(rhessysDayRain) - sum(calobsYearFlow)
 			fittnessList['ETbias'] = (sum(rhessysDayET)-approxET)/approxET
 			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushObs']-fittnessList['meanAnnualFlushRHESSys']
-
+			fittnessList['wbias'] = fittnessList['flashCOMP'] ## do it for now
 		## 
 		fittnessList['loglikelihood'] = fittness_Overall(fittnessList, fittnessChoice)
 		
