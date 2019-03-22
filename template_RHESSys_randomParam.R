@@ -45,7 +45,7 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 		otherParam = paramNames[cond]
 		j=1; 
 		otherParamLine = paste(paste('-',otherParam[j],sep=''),param[, otherParam[j]])
-		for(j in 2:length(otherParam)) otherParamLine = paste(otherParamLine, paste(paste('-',otherParam[j],sep=''),param[, otherParam[j]]))
+		if(sum(cond)>1) for(j in 2:length(otherParam)) otherParamLine = paste(otherParamLine, paste(paste('-',otherParam[j],sep=''),param[, otherParam[j]]))
 				
 		AllparamLine = paste(sParamLine, svParamLine, gwParamLine, otherParamLine)
 	}else{
