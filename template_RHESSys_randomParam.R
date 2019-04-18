@@ -40,7 +40,7 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 	otherParamLine = ''
 	
 	# check for non default parameter	
-	cond = !(paramNames %in% c("itr","s1","s2","sv1","sv2","gw1","gw2"))
+	cond = !(paramNames %in% c("itr","s1","s2","s3","sv1","sv2","gw1","gw2"))
 	if(sum(cond)>0){
 		otherParam = paramNames[cond]
 		j=1; 
