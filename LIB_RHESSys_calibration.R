@@ -243,6 +243,7 @@ clusterAnalysis = function(passedArgList, fittnessfile){
 	numCluster = nrow(fittness.mean)
 
 	## plots
+	dev.new()
 	layout(matrix(1:2,nrow=2))
 	par(mar=c(4,3,1,1))
 	myColor = rainbow(numCluster)
@@ -285,7 +286,7 @@ clusterAnalysis = function(passedArgList, fittnessfile){
 		param[,nn] = as.vector(sapply(seq_len(dim(param.mean)[1]),function(jj){paramList[[jj]][,nn]}))
 	}#nn
 
-	return <- param
+	return <- list(param=param, selectedParamSets=hold)
 }#clusterAnalysis
 
 
