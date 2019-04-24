@@ -155,7 +155,7 @@ evaluateModel = function(passedArgList){
 	hold = cbind(runs[, finalparamIndex[!is.na(finalparamIndex)]], t(result));
 	colnames(hold)[seq_len(sum(!is.na(finalparamIndex))+1)] = c(finalparamLabel[!is.na(finalparamIndex)],'itr')
 	
-	output = paste(passedArgList$projPath,'/',passedArgList$RHESSysModel,'/', unlist(strsplit(passedArgList$runScript,'\\.'))[1] ,'_itr',min(Itr),"_",max(Itr),"_fittingEvaluation_", matchYears[1], "_",matchYears[2],".csv",sep="")
+	output = paste(passedArgList$projPath,'/',passedArgList$RHESSysModel,'/', unlist(strsplit(tail(unlist(strsplit(passedArgList$runScript,'/')),n=1),'\\.'))[1] ,'_itr',min(Itr),"_",max(Itr),"_fittingEvaluation_", matchYears[1], "_",matchYears[2],".csv",sep="")
 	write.csv(hold, output, row.names=F)
 	
 	return <- output
