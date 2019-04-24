@@ -148,6 +148,8 @@ evaluateModel = function(passedArgList){
 	
 	output = paste(passedArgList$projPath,'/',passedArgList$RHESSysModel,'/', unlist(strsplit(passedArgList$runScript,'\\.'))[1] ,'_itr',min(Itr),"_",max(Itr),"_fittingEvaluation_", matchYears[1], "_",matchYears[2],".csv",sep="")
 	write.csv(hold, output, row.names=F)
+	
+	return <- output
 }#function
 
 
