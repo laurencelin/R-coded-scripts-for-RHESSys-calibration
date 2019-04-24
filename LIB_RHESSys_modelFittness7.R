@@ -59,7 +59,7 @@ fittness_Overall = function(fittnessValues,choice_){
 
 #====================================================================================================================#
 modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
-	print(DailyThreshold_)
+	#print(DailyThreshold_)
 	
 	# timeTable_ is from LIB_dailyTimeSeries3 (a data.frame object)
 	MonthLen = c(31,28,31,30,31,30,31,31,30,31,30,31)
