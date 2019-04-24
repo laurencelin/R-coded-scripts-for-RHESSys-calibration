@@ -170,6 +170,7 @@ clusterAnalysis = function(fittnessfile){
 	
 	## finding parameters
 	w.names = colnames(w)
+	paramNames = names(searchParam)
 	finalparamLabel = unlist(lapply(seq_along(searchParam), function(i){
 			if(length(searchParam[[i]])>1) return <- paste(paramNames[i], searchParam[[i]],sep='')
 			else return <- paramNames[i]
