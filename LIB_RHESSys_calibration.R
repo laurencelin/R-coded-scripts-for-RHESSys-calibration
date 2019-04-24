@@ -209,7 +209,7 @@ clusterAnalysis = function(passedArgList, fittnessfile){
 		maxNumCluster = floor(dim(clusterData)[1]/3)
 		wss <- (dim(clusterData)[1]-1)*sum(apply(clusterData,2,var))
 		for (i in 2: maxNumCluster) wss[i] <- sum(kmeans(clusterData, centers=i,iter.max=1000)$withinss)
-		plot(seq_along(wss), wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+		#plot(seq_along(wss), wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
 		
 			AccumImprovement = cumsum(diff(wss))
 			plot( AccumImprovement, type='b')
