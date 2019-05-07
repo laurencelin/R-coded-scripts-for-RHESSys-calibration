@@ -4,8 +4,8 @@ examples below
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_calibration.R')
 
 
-RHESSysParamBoundaryDefault ## 
-# add a new parameter / change parameter search boundary
+RHESSysParamBoundaryDefault 
+// add a new parameter / change parameter search boundary
 	RHESSysParamBoundaryDefault$gw1 = c(0.001,0.4)
 	RHESSysParamBoundaryDefault$gw2 = c(0.001,0.4)
   
@@ -30,10 +30,10 @@ RHESSysParamBoundaryDefault ##
 		'-whdr worldfiles_fc/worldfile.hdr',
 		'-r flows/subTestfc.txt flows/surfTestfc.txt')
 			   
-	RivannaJobs(RHESSys_arg,'output',param, '../parallelRun18101fc.sh')	## generate shell files for job sbatch
+	RivannaJobs(RHESSys_arg,'output',param, '../parallelRun18101fc.sh') // generate shell files for job sbatch
   
   
-  ## ----------------------------------------------------------------- 
+  // ----------------------------------------------------------------- 
 	# evaluate the first runs  
 	argList$projPath		= "~/BAISMAN"
 	argList$orbFile			= "usgs01583580.csv"
