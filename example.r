@@ -27,10 +27,10 @@ arg=commandArgs(T)
 		
 	RHESSys_arg = paste(
 		'-st 2006 1 1 1 -ed 2017 12 1 1',
-		'-b -sewer_flag -newcaprise -capr 0.001 -gwtoriparian -capMax 0.01 -slowDrain',
+		'-b -newcaprise -capr 0.001 -gwtoriparian -capMax 0.01',
 		'-t tecfiles/tec_daily.txt',
 		'-w worldfiles_fc/worldfile',
-		'-whdr worldfiles_fc/worldfile_compact661.hdr',
+		'-whdr worldfiles_fc/worldfile.hdr',
 		'-r flows/subTestfc.txt flows/surfTestfc.txt')
 			   
 	RivannaJobs(RHESSys_arg,'output',param, '../parallelRun18101fc.sh')	
@@ -41,8 +41,8 @@ arg=commandArgs(T)
 	argList$orbFile			= "usgs01583580.csv"
 	argList$startDate		= "2010-10-1"
 	argList$endDate			= "2017-9-30"
-	argList$RHESSysModel	= "rhessys_baisman10m"
-	argList$RHESSysOutput	= "output_parallelRun18101fc"
+	argList$RHESSysModel		= "rhessys_baisman10m"
+	argList$RHESSysOutput		= "output_parallelRun18101fc"
 	argList$runScript		= "parallelRun18101fc.sh"
 	
 	outputfile = evaluateModel(argList)
