@@ -26,6 +26,7 @@ arg=commandArgs(T)
 	param$snowTs = runif(num, RHESSysParamBoundaryDefault$snowTs[1],RHESSysParamBoundaryDefault$snowTs[2])
 		
 	RHESSys_arg = paste(
+		'path_to_rhessys_binary',
 		'-st 2006 1 1 1 -ed 2017 12 1 1',
 		'-b -newcaprise -capr 0.001 -gwtoriparian -capMax 0.01',
 		'-t tecfiles/tec_daily.txt',
