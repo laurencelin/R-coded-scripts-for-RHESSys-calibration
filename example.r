@@ -24,7 +24,6 @@ arg=commandArgs(T)
 	param$gw2 = runif(num, RHESSysParamBoundaryDefault$gw2[1],RHESSysParamBoundaryDefault$gw2[2])
 	param$snowEs = runif(num, RHESSysParamBoundaryDefault$snowEs[1],RHESSysParamBoundaryDefault$snowEs[2])
 	param$snowTs = runif(num, RHESSysParamBoundaryDefault$snowTs[1],RHESSysParamBoundaryDefault$snowTs[2])
-	# param$rtz = runif(num, RHESSysParamBoundaryDefault$rtz[1],RHESSysParamBoundaryDefault$rtz[2])
 		
 	RHESSys_arg = paste(
 		'-st 2006 1 1 1 -ed 2017 12 1 1',
