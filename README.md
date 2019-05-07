@@ -1,28 +1,49 @@
 # R-coded-scripts-for-RHESSys-calibration
+examples below
 
-Calibration scripts here need massive updates and re-organization (July 6, 2018).
-
-Organization is going to be platform oriented, offering the common GLUE & MCMC:  
-1) scripts (GLUE / MCMC) for local computers
-2) scripts for SBATCH/SLURM cluster systems
-3) scripts for BSUB cluster systems
+source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_calibration.R')
 
 
+RHESSysParamBoundaryDefault ## 
+# add a new parameter / change parameter search boundary
+	RHESSysParamBoundaryDefault$gw1 = c(0.001,0.4)
+	RHESSysParamBoundaryDefault$gw2 = c(0.001,0.4)
+  
+  itr = 1:1000
+	num=length(itr) 
+	param = data.frame(itr = itr) # construct the parameter set for calibration. 
+	param$s1 = runif(num, RHESSysParamBoundaryDefault$s1[1],RHESSysParamBoundaryDefault$s1[2])
+	param$s2 = runif(num, RHESSysParamBoundaryDefault$s2[1],RHESSysParamBoundaryDefault$s2[2])
+	param$sv1 = runif(num, RHESSysParamBoundaryDefault$sv1[1],RHESSysParamBoundaryDefault$sv1[2])
+	param$sv2 = runif(num, RHESSysParamBoundaryDefault$sv2[1],RHESSysParamBoundaryDefault$sv2[2])
+	param$gw1 = runif(num, RHESSysParamBoundaryDefault$gw1[1],RHESSysParamBoundaryDefault$gw1[2])
+	param$gw2 = runif(num, RHESSysParamBoundaryDefault$gw2[1],RHESSysParamBoundaryDefault$gw2[2])
+	param$snowEs = runif(num, RHESSysParamBoundaryDefault$snowEs[1],RHESSysParamBoundaryDefault$snowEs[2])
+	param$snowTs = runif(num, RHESSysParamBoundaryDefault$snowTs[1],RHESSysParamBoundaryDefault$snowTs[2])
+	
+		
+	RHESSys_arg = paste(
+		'-st 2006 1 1 1 -ed 2017 12 1 1',
+		'-b -newcaprise -capr 0.001-capMax 0.01',
+		'-t tecfiles/tec_daily.txt',
+		'-w worldfiles_fc/worldfile',
+		'-whdr worldfiles_fc/worldfile.hdr',
+		'-r flows/subTestfc.txt flows/surfTestfc.txt')
+			   
+	RivannaJobs(RHESSys_arg,'output',param, '../parallelRun18101fc.sh')	## generate shell files for job sbatch
+  
+  
+  ## ----------------------------------------------------------------- 
+	# evaluate the first runs  
+	argList$projPath		= "~/BAISMAN"
+	argList$orbFile			= "usgs01583580.csv"
+	argList$startDate		= "2010-10-1"
+	argList$endDate			= "2017-9-30"
+	argList$RHESSysModel	= "rhessys_baisman10m"
+	argList$RHESSysOutput	= "output_parallelRun18101fc"
+	argList$runScript		= "parallelRun18101fc.sh"
+	
+	outputfile = evaluateModel(argList)
 
 
 
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ << outdated below >> ~~~~~~~~~~~~~~~~~
-The main script is CUS_RHESSys_MultipleCalibration_MCMC_parallel_MCMC_killdevil.r
-All other script with names began with "LIB_" are libraries of functions that would be used by the main script.
-Particularly, this MCMC calibration script is designed for UNC Killdevil computer clusters. 
-However, it can be generalized for other computer clusters and local personal desktop/mainframe computer. 
-
-It is not recommended to run this calibration script without knowing the MCMC and probability likelihood concepts. 
-There are several areas in the script that need to be customized/paid attention.
-1) iniParam and RHESSYS_PARAMS -- initial values of RHESSys parameters: s1, s2, s3, sv1, sv2, gw1, and gw2. Some additional parameters, e.g., pondz, snowT, RTz, and CAPr, are for custom RHESSys build. Users can edit the parameter list.
-2) param.fittingNames -- select parameters for calibration
-3) paramBoundary -- ranges of parameters
-4) precmd -- RHESSys model, start time, end time, worldfile, flow table, and other RHESSys runtime flags
-5) FITTNESS_NAMES and betaShape1 -- set fittness criteria and likelihood probability; All criteria will be mulitpled through likelihood probabilities. 
-6) arg -- command line arguments (when using Rscript): project directory, observation file, session ID, iternation ID (starting and ending), RHESSys model directory, model output directory, number of CPU cores, cluster job ID. 
