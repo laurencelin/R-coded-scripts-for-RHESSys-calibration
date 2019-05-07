@@ -38,7 +38,7 @@ arg=commandArgs(T)
 
 	## ----------------------------------------------------------------- 
 	# evaluate the first runs  
-	argList$projPath		= "/Volumes/LaCie/current_work/SEES/BAISMAN"
+	argList$projPath		= "~/BAISMAN"
 	argList$orbFile			= "usgs01583580.csv"
 	argList$startDate		= "2010-10-1"
 	argList$endDate			= "2017-9-30"
