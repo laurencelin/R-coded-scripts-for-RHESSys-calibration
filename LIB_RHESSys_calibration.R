@@ -3,8 +3,7 @@ source('https://raw.githubusercontent.com/laurencelin/Date_analysis/master/LIB_m
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_modelBehavior7.R')
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_modelFittness7.R')
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_modelPlot_7.r')
-library(MASS)
-library(mclust)
+
 
 RHESSysParamBoundaryDefault = data.frame(s1=c(0.001,20))
 RHESSysParamBoundaryDefault $s2 = c(0.1,300.0)
