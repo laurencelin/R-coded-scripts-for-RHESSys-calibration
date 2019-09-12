@@ -4,6 +4,7 @@ source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSy
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_modelFittness7.R')
 source('https://raw.githubusercontent.com/laurencelin/R-coded-scripts-for-RHESSys-calibration/master/LIB_RHESSys_modelPlot_7.r')
 library(MASS)
+library(mclust)
 
 RHESSysParamBoundaryDefault = data.frame(s1=c(0.001,20))
 RHESSysParamBoundaryDefault $s2 = c(0.1,300.0)
@@ -180,7 +181,147 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
 }#function
 
 
+##-------------------------------------------------------------------------------------------- clusterAnalysis
+clusterAnalysis = function(fittnessfile){
+	
+    ## do something about searchParam -- not the best code yet but works for now
+    tmp = names(RHESSysParamBoundaryDefault)
+    flagname = paste(substr(tmp,1,nchar(tmp)-1) , gsub('[0-9]','',substr(tmp,nchar(tmp),nchar(tmp)) ), sep='')
+    hold = tapply(tmp, flagname, function(xx){ seq_along(xx) });
+    hold.name = names(hold)
+    for( ii in seq_along(hold)){
+        findindex = match(hold.name[ii],names(searchParam))
+        if(is.na(findindex)){
+            searchParam = append(searchParam, hold[ii])
+        }else{
+            searchParam[[ii]] = hold[[ii]]
+        }
+    }#for ii
+    #print(searchParam)
+    
+	## read fittness file
+	w = read.csv(fittnessfile)
+	
+	## finding parameters
+	w.names = colnames(w)
+	paramNames = names(searchParam)
+	finalparamLabel = unlist(lapply(seq_along(searchParam), function(i){
+			if(length(searchParam[[i]])>1) return <- paste(paramNames[i], searchParam[[i]],sep='')
+			else return <- paramNames[i]
+		}))# lapply; unlist
+	
+	finalparamIndex = match(finalparamLabel, w.names)
+	print(finalparamLabel)
+	print(finalparamIndex)
 
+
+	
+		selectCond = T
+		allowance = 6
+		while(selectCond){
+			threshold = max(w$loglikelihood,na.rm=T) - allowance
+			clusterData <- w[!is.na(w$loglikelihood) & w$loglikelihood>threshold,finalparamLabel[!is.na(finalparamIndex)] ]
+			fittnessData = w[!is.na(w$loglikelihood) & w$loglikelihood>threshold,c('dailyNSE','dailyLogNSE','weeklyNSE','weeklyLogNSE','weeklyCDFfitr2','monthlyNSE','yearlyNSE','bias')]
+			
+			#------------------- option 1)
+			# Determine number of clusters
+			maxNumCluster = floor(dim(clusterData)[1]/3)
+			wss <- (dim(clusterData)[1]-1)*sum(apply(clusterData,2,var))
+			for (i in 2: maxNumCluster) wss[i] <- sum(kmeans(clusterData, centers=i,iter.max=1000)$withinss)
+			#plot(seq_along(wss), wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+			
+				AccumImprovement = cumsum(diff(wss))
+				#plot( AccumImprovement, type='b')
+				numCluster = which( AccumImprovement/min(AccumImprovement) > 0.7)[1]; numCluster #**
+			
+			# K-Means Cluster Analysis
+			fit <- kmeans(clusterData, numCluster,iter.max=1000) # 80 cluster solution
+			fit$classification = fit$cluster
+			
+			#------------------- option 2)
+			#fit <- Mclust(clusterData) #plot(fit) #summary(fit) ##<<--- problem
+			
+			selectCond = !prod(table(fit$classification)>3) | dim(fittnessData)[1]/dim(w)[1] < 0.05 # looping key
+			# the second argument make the cluster based on at least 10% of the calibration
+			allowance = allowance + 1
+		}#while
+	
+		# selected parameter sets ---- will be used later
+		selected = w[!is.na(w$loglikelihood) & w$loglikelihood>threshold,c('itr','loglikelihood')]
+		hold = cbind(selected[order(selected[,2]),], fittnessData[order(selected[,2]),])
+		# cbind(fit$classification, fittnessData) # for debug
+		# c( dim(fittnessData)[1],  dim(fittnessData)[1]/dim(w)[1] )
+	
+	## parameter space
+	param.mean = aggregate(clusterData,by=list(fit$classification),FUN=mean)
+	param.sd = aggregate(clusterData,by=list(fit$classification),FUN=sd)
+	param.max = aggregate(clusterData,by=list(fit$classification),FUN=max)
+	param.min = aggregate(clusterData,by=list(fit$classification),FUN=min)
+	param.len = aggregate(clusterData,by=list(fit$classification),FUN=length)
+	numCluster = dim(param.mean)[1]
+	param.num = seq_len(dim(param.mean)[2]-1)
+	
+	param.lower = apply(w[,finalparamLabel[!is.na(finalparamIndex)]],2,min)
+	param.upper = apply(w[,finalparamLabel[!is.na(finalparamIndex)]],2,max)
+	param.upper = ceiling(param.upper/(10^round(log10(param.upper))) )*(10^round(log10(param.upper)))
+	param.range = param.upper-param.lower
+		
+	## fittness space
+	fittness.mean = aggregate(fittnessData,by=list(fit$classification),FUN=mean)
+	fittness.sd = aggregate(fittnessData,by=list(fit$classification),FUN=sd)
+	fittness.max = aggregate(fittnessData,by=list(fit$classification),FUN=max)
+	fittness.min = aggregate(fittnessData,by=list(fit$classification),FUN=min)
+	fittness.len = aggregate(fittnessData,by=list(fit$classification),FUN=length)
+	numCluster = nrow(fittness.mean)
+
+	## plots
+	layout(matrix(1:2,nrow=2))
+	par(mar=c(4,3,1,1))
+	myColor = rainbow(numCluster)
+	param.mean.std = as.numeric((param.mean[1,-1]-param.lower)/param.range)
+	param.upper.std = as.numeric((param.mean[1,-1]+param.sd[1,-1]-param.lower)/param.range)
+	param.lower.std = as.numeric((param.mean[1,-1]-param.sd[1,-1]-param.lower)/param.range)
+	plot(param.num, param.mean.std, type='b', ylim=c(0,1),col=myColor[1], ylab='std param space', xlab='', xaxt='n')
+	arrows(param.num,y0= param.upper.std, y1= param.lower.std,code=3,length=0.02,angle=90,col=myColor[1])
+	for(jj in 2:numCluster){
+		param.mean.std = as.numeric((param.mean[jj,-1]-param.lower)/param.range)
+		param.upper.std = as.numeric((param.mean[jj,-1]+param.sd[1,-1]-param.lower)/param.range)
+		param.lower.std = as.numeric((param.mean[jj,-1]-param.sd[1,-1]-param.lower)/param.range)
+	  	lines(param.num, param.mean.std,col=myColor[jj], type='b')
+	  	arrows(param.num,y0= param.upper.std,y1=param.lower.std,code=3,length=0.02,angle=90,col=myColor[jj])
+	}; 
+	axis(1, at= param.num, labels=finalparamLabel[!is.na(finalparamIndex)]); 
+	axis(1,line=1, at= param.num, labels=round(param.upper,2),col=NA)
+
+	plot(1:8, fittness.mean[1,-1], type='b', ylim=c(0,1),col=myColor[1], ylab='fittness space', xlab='', xaxt='n')
+	arrows(1:8,y0=as.numeric(fittness.mean[1,-1]+ fittness.sd[1,-1]), y1=as.numeric(fittness.mean[1,-1]-fittness.sd[1,-1]),code=3,length=0.02,angle=90,col=myColor[1])
+	for(jj in 2:numCluster){
+	  lines(1:8, fittness.mean[jj,-1],col=myColor[jj], type='b')
+	  arrows(1:8,y0=as.numeric(fittness.mean[jj,-1]+ fittness.sd[jj,-1]),y1=as.numeric(fittness.mean[jj,-1]- fittness.sd[jj,-1]),code=3,length=0.02,angle=90,col=myColor[jj])
+	}; 
+	axis(1, at=1:8, labels=colnames(fittnessData), cex.axis=0.5,las=2); 
+	
+	
+	
+	
+	## generate next set of random
+	param.num = round(1000/dim(param.mean)[1])
+   	paramList = lapply(seq_len(dim(param.mean)[1]), function(i){
+		return <- sapply(names(param.mean)[-1], function(nn){
+			tmp = rnorm(param.num*10, param.mean[i,nn], param.sd[i,nn])
+			cond = (tmp<max(RHESSysParamBoundaryDefault[,nn]) & tmp>min(RHESSysParamBoundaryDefault[,nn]) )
+			return <- tmp[cond][1:param.num]
+		})
+	})# lapply
+
+
+	param = data.frame( itr = seq_len(param.num*dim(param.mean)[1]) )
+	for(nn in names(param.mean)[-1]){
+		param[,nn] = as.vector(sapply(seq_len(dim(param.mean)[1]),function(jj){paramList[[jj]][,nn]}))
+	}#nn
+
+	return <- list(param=param, selectedParamSet=hold)
+}#clusterAnalysis
 
 
 
