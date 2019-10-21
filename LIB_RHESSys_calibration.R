@@ -57,12 +57,12 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
     
     ## don;t know how to do
     tmp = names(what);
-    what.paramINDEX = match(tmp[tmp!='it'],names(what))
+    what.paramINDEX = match(tmp[tmp!='it'& tmp!='itr'],names(what))
     
     AllparamLine = NULL
     for(ii in seq_along(what.paramINDEX)){
-       if(ii==1)  AllparamLine = what[[what.paramINDEX[ii]]]
-       else AllparamLine=paste(AllparamLine,what[[what.paramINDEX[ii]]])
+       if(ii==1)  AllparamLine = what[[what.paramINDEX[ii] ]]
+       else AllparamLine=paste(AllparamLine,what[[what.paramINDEX[ii] ]])
     }#for ii
     
     
