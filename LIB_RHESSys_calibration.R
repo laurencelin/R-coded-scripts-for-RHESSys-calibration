@@ -48,7 +48,7 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
                 sapply(seq_len(dim(param[,ii])[1]),function(jj){ paste(param[jj,ii],collapse=' ') })
                 )
         }else{
-            retirn <- paste(
+            return <- paste(
                 paste('-',flagname[ii][1],sep=''),
                 param[,ii]
                 )
