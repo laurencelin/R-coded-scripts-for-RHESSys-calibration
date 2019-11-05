@@ -116,7 +116,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 	#--------------------------------------------
 	fittnessList = rep(NA,24)
 	names(fittnessList)=c(
-		"dailyNSE","dailyLogNSE","meanAnnualFlushObs","meanAnnualFlushRHESSys",
+		"dailyNSE","dailyLogNSE","meanAnnualFlashObs","meanAnnualFlashRHESSys",
 		"weeklyNSE","weeklyLogNSE","inversedweeklyNSE","weeklyCDFfitr2",
 		"monthlyNSE","monthlySAE",
 		"yearlyNSE","yearlySAE",
