@@ -138,10 +138,10 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 
 
 			### ---- annual flashing			
-			fittnessList['meanAnnualFlushObs'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
+			fittnessList['meanAnnualFlashObs'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
 				len = length(x); return <- sum(abs(calobsDayFlow[x[2:len]] - calobsDayFlow[x[1:(len-1)]])) / sum(calobsDayFlow[x])
 			}))
-			fittnessList['meanAnnualFlushRHESSys'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
+			fittnessList['meanAnnualFlashRHESSys'] = mean(tapply(1:dim(timeTable_)[1], timeTable_$wy, function(x){
 				len = length(x); return <- sum(abs(rhessysDayFlow[x[2:len]] - rhessysDayFlow[x[1:(len-1)]])) / sum(rhessysDayFlow[x])
 			}))			
 					
@@ -206,8 +206,8 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 
 			approxET = sum(rhessysDayRain) - sum(calobsYearFlow)
 			fittnessList['ETbias'] = (sum(rhessysDayET)-approxET)/approxET
-			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlushRHESSys']-fittnessList['meanAnnualFlushObs']
-			#fittnessList['wbias'] = fittnessList['flashCOMP']/fittnessList['meanAnnualFlushObs'] ## do it for now
+			fittnessList['flashCOMP'] = fittnessList['meanAnnualFlashRHESSys']-fittnessList['meanAnnualFlashObs']
+			#fittnessList['wbias'] = fittnessList['flashCOMP']/fittnessList['meanAnnualFlashObs'] ## do it for now
 		## 
 		fittnessList['loglikelihood'] = fittness_Overall(fittnessList, fittnessChoice)
 		
