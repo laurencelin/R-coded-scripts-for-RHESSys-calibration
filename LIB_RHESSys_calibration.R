@@ -14,7 +14,9 @@ RHESSysParamBoundaryDefault $gw1 = c(0.001,0.2)
 RHESSysParamBoundaryDefault $gw2 = c(0.001,0.2)
 RHESSysParamBoundaryDefault $snowEs = c(0.5,2)
 RHESSysParamBoundaryDefault $snowTs = c(0.5,2)
-
+RHESSysParamBoundaryDefault $svalt1 = c(0.5,2)
+RHESSysParamBoundaryDefault $svalt2 = c(0.5,2)
+	
 argList = list()
 searchParam = list()
 # for example,
@@ -24,6 +26,26 @@ searchParam = list()
 		# '-w worldfiles/combine_oldwayRZ5_soiltest3b',
 		# '-whdr worldfiles_ws18/ws18Bolstadcomb.hdr',
 		# '-r flow_ws18/ws18Bolstad.flow')
+
+scaler_random = function(nn, param_bounds){
+	# param_bounds is a data frame
+	outputcolnames = colnames(param_bounds)
+	output = sapply(outputcolnames,function(xx){
+		lower = param_bounds[1,xx]
+		upper = param_bounds[2,xx]
+		if(lower<1 & upper > 1){
+	        mm = floor(nn*0.3)
+	        normalBounded = rnorm(10*mm,1,(upper-lower)*0.05)
+	        cond = normalBounded>=lower & normalBounded<=upper
+	        randomlist = c( runif(mm,lower,1), normalBounded[cond][1:mm], runif(nn-2*mm,1,upper) )
+	        return <- sample(randomlist,nn)
+	    }else{
+	        return <- runif(nn,lower, upper)
+	    }
+	})# sapply
+	colnames(output) = outputcolnames
+	return <- output
+}#function
 
 RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 	
