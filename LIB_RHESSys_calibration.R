@@ -27,10 +27,13 @@ searchParam = list()
 		# '-whdr worldfiles_ws18/ws18Bolstadcomb.hdr',
 		# '-r flow_ws18/ws18Bolstad.flow')
 
-scaler_random = function(nn, param_bounds){
+scaler_random = function(itr, param_bounds){
+	# itr is a vector of iteration index
 	# param_bounds is a data frame
+	nn = length(itr)
 	outputcolnames = colnames(param_bounds)
-	output = sapply(outputcolnames,function(xx){
+	output = data.frame(itr = itr,
+	sapply(outputcolnames,function(xx){
 		lower = param_bounds[1,xx]
 		upper = param_bounds[2,xx]
 		if(lower<1 & upper > 1){
@@ -42,8 +45,8 @@ scaler_random = function(nn, param_bounds){
 	    }else{
 	        return <- runif(nn,lower, upper)
 	    }
-	})# sapply
-	colnames(output) = outputcolnames
+	}))# sapply
+	#colnames(output) = c('itr',outputcolnames)
 	return <- output
 }#function
 
