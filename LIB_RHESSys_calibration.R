@@ -161,8 +161,9 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
 		itrIndex = seq_along(runs[1,])[grepl('^output[a-zA-Z0-9_/]+rhessys[0-9]+$',runs[1,])]
 		Itr = as.numeric(sapply(gsub("[a-z]", "", runs[, itrIndex]),function(str){ unlist(strsplit(str,'/'))[2] }))
 		
+    path2modelresults = ifelse(grepl('/',passedArgList$RHESSysOutput), passedArgList$RHESSysOutput, paste(passedArgList$projPath, passedArgList$RHESSysModel, passedArgList$RHESSysOutput,sep='/'))
 	i=1
-	rhessys_SingleFile = read.table(paste(passedArgList$projPath, passedArgList$RHESSysModel, passedArgList$RHESSysOutput, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/'),header=T,sep=' ')
+	rhessys_SingleFile = read.table(paste(path2modelresults, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/'),header=T,sep=' ')
 	rhessys_SingleFile.date=as.Date(paste(rhessys_SingleFile$day, rhessys_SingleFile$month, rhessys_SingleFile$year,sep="-"),format="%d-%m-%Y")
 	plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
 	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
@@ -174,12 +175,12 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
 	pb <- txtProgressBar(min = 0, max = length(Itr), style = 3)
 	result = sapply(seq_along(Itr),function(i){
 		tryCatch({
-			rhessys_SingleFile = read.table(paste(passedArgList$projPath, passedArgList$RHESSysModel, passedArgList$RHESSysOutput, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/'),header=T,sep=' ')
+			rhessys_SingleFile = read.table(paste(path2modelresults, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/'),header=T,sep=' ')
 			
 			##......... function calling
 			w = modelFittness( as.numeric(calobs[calobs.dtsm,'mmd']), rhessys_SingleFile[rhessys.dtsm,], DTStable);
 			
-			outputName = paste(passedArgList$projPath,passedArgList$RHESSysModel,passedArgList$RHESSysOutput,paste("rhessys",Itr[i],"_plot_", matchYears[1],"_",matchYears[2], suffix,"style2.pdf",sep=''),sep="/")
+			outputName = paste(path2modelresults,paste("rhessys",Itr[i],"_plot_", matchYears[1],"_",matchYears[2], suffix,"style2.pdf",sep=''),sep="/")
 			modelPlotStyle2( 
 				calobs_  = as.numeric(calobs[calobs.dtsm,'mmd']) , 
 				rhessys_  = rhessys_SingleFile[rhessys.dtsm,] , 
@@ -190,7 +191,7 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
 			return <- c(Itr[i],w$FittnessList)
 		}, error = function(e){
 			setTxtProgressBar(pb, i)
-			ff = paste(passedArgList$projPath, passedArgList$RHESSysModel, passedArgList$RHESSysOutput, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/')
+			ff = paste(path2modelresults, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/')
 			print(paste('file', ff, ' is missing/corrupted.'))
 			return <- c(i,rep(NA,24))
 		})#try blocks
