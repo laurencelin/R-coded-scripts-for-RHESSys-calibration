@@ -109,10 +109,9 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 }#function
 
 
-evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
+evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=NA, bottomValue=NA){
     
-    suffix = '_';
-    if(topPrecent<1 | bottomPrecent>0) suffix = paste('',gsub('\\.','', bottomPrecent), gsub('\\.','',topPrecent),'',sep='_')
+    
     
     ## do something about searchParam -- not the best code yet but works for now
     tmp = names(RHESSysParamBoundaryDefault)
@@ -131,15 +130,30 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0){
     
 	period=seq.Date(from=as.Date(passedArgList$startDate), to=as.Date(passedArgList$endDate) ,by="day") 
 	
+	
 	path2Obs = ifelse(grepl('/',passedArgList$orbFile), passedArgList$orbFile, paste(passedArgList$projPath,"/obs/", passedArgList$orbFile,sep=""))
 	calobs_ = read.csv(path2Obs, stringsAsFactors=F);
 		## selecting observation
 		calobsNonZero = !is.na(calobs_[,'mmd']) & calobs_[,'mmd']> 0 & sapply(calobs_[,'mmd'],can.be.numeric); 
 		calobs = calobs_[calobsNonZero,]
+		check=ecdf(calobs[,'mmd'])
+		
 		calobs_boundary = quantile(calobs[,'mmd'],prob=c(bottomPrecent, topPrecent))
+		if(!is.na(topValue)){
+			calobs_boundary[2] = topValue
+			topPrecent = check(topValue)
+		}
+		if(!is.na(bottomValue)){
+			calobs_boundary[1] = bottomValue
+			bottomPrecent = check(bottomValue)
+		}
 		calobs_boundary_cond = calobs[,'mmd']>=calobs_boundary[1] & calobs[,'mmd']<=calobs_boundary[2]
 		calobs = calobs[calobs_boundary_cond, ]
 	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+	
+	
+	suffix = '_';
+    if(topPrecent<1 | bottomPrecent>0) suffix = paste('',gsub('\\.','', bottomPrecent), gsub('\\.','',topPrecent),'',sep='_')
 	
 	path2Runscript = ifelse(grepl('/',passedArgList$runScript), passedArgList$runScript, paste(passedArgList$projPath, passedArgList$RHESSysModel,passedArgList$runScript ,sep='/'))
 	
