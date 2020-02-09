@@ -182,6 +182,15 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=
 	plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
 	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
 	calobs.dtsm = match(plotTime, calobs.date0)
+	
+	##--------------- take out top-2% streamflow > precip condition ----------------##
+	problemCond = calobs[calobs.dtsm,'mmd']>quantile(calobs[calobs.dtsm,'mmd'],0.98) & calobs[calobs.dtsm,'mmd']>rhessys_SingleFile[rhessys.dtsm,'precip']
+	
+	calobs = calobs[calobs.dtsm,][!problemCond,]
+	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+	plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
+	calobs.dtsm = match(plotTime, calobs.date0)
 	DTStable = dailyTimeSeries(plotTime)
 	matchYears = range(DTStable$wy)
 	
