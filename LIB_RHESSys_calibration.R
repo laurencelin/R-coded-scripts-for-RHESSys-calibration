@@ -202,8 +202,16 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
 		lines(plotTime, rhessys_SingleFile[rhessys.dtsm,'streamflow'], col='blue' )
 		lines(plotTime, rhessys_SingleFile[rhessys.dtsm,'baseflow'], col='darkblue',lty=2 )
         
+        
+        return <- list(
+        		date = rhessys_SingleFile.date,
+        		model = rhessys_SingleFile,
+        		model2obs = rhessys.dtsm,
+        		obs = as.numeric(calobs[calobs.dtsm,'mmd'])
+        )
     }, error = function(e){
         print(paste('file', passedArgList$RHESSysOutput, ' is incorrect/missing/corrupted.'))
+        return <- NULL
     })#try blocks
 }#funciton
 
