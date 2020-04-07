@@ -108,13 +108,80 @@ RivannaJobs=function(RHESSys_arg, outputFOLDER, param, outputfile){
 	
 }#function
 
+evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=1, bottomPrecent=0, topValue=NA, bottomValue=NA){
+    period=seq.Date(from=as.Date(passedArgList$startDate), to=as.Date(passedArgList$endDate) ,by="day")
+    
+    path2Obs = ifelse(grepl('/',passedArgList$orbFile), passedArgList$orbFile, paste(passedArgList$projPath,"/obs/", passedArgList$orbFile,sep=""))
+    calobs_ = read.csv(path2Obs, stringsAsFactors=F);
+        ## selecting observation
+        calobsNonZero = !is.na(calobs_[,'mmd']) & calobs_[,'mmd']> 0 & sapply(calobs_[,'mmd'],can.be.numeric);
+        calobs = calobs_[calobsNonZero,]
+        check=ecdf(calobs[,'mmd'])
+        
+        calobs_boundary = quantile(calobs[,'mmd'],prob=c(bottomPrecent, topPrecent))
+        if(!is.na(topValue)){
+            calobs_boundary[2] = topValue
+            topPrecent = check(topValue)
+        }
+        if(!is.na(bottomValue)){
+            calobs_boundary[1] = bottomValue
+            bottomPrecent = check(bottomValue)
+        }
+        calobs_boundary_cond = calobs[,'mmd']>=calobs_boundary[1] & calobs[,'mmd']<=calobs_boundary[2]
+        calobs = calobs[calobs_boundary_cond, ]
+    calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+    
+    ## suffix for the output file
+    suffix = '_';
+    if(topPrecent<1 | bottomPrecent>0) suffix = paste('',gsub('\\.','', bottomPrecent), gsub('\\.','',topPrecent),'',sep='_')
+    
+    ## scanning model results initially
+    rhessys_SingleFile = read.table(passedArgList$RHESSysOutput,header=T,sep=' ')
+    rhessys_SingleFile.date=as.Date(paste(rhessys_SingleFile$day, rhessys_SingleFile$month, rhessys_SingleFile$year,sep="-"),format="%d-%m-%Y")
+    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+    rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
+    calobs.dtsm = match(plotTime, calobs.date0)
+    
+    ##--------------- take out top-0.1% streamflow > precip condition ----------------##
+    tmpIndex = seq_along(calobs[calobs.dtsm,'mmd'])
+    problemCond = (calobs[calobs.dtsm,'mmd']>quantile(calobs[calobs.dtsm,'mmd'],0.99) | calobs[calobs.dtsm,'mmd']>10)
+    problemCond = problemCond[tmpIndex[problemCond]>5] # looking the past 5-day precipitation records
+    rain = rowSums(cbind(rhessys_SingleFile[rhessys.dtsm,'precip'][problemCond],
+        rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-1],
+        rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-2],
+        rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-3],
+        rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-4],
+        rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-5]))
+    runoff_rain_comparison = cbind(
+        index=tmpIndex[problemCond],
+        runoff=calobs[calobs.dtsm,][problemCond,'mmd'],
+        rain=rain)
+    tmpIndex = -runoff_rain_comparison[runoff_rain_comparison[,'runoff'] > runoff_rain_comparison[,'rain'],'index'] # remove these flow data that does not support by precipitation data
+        
+    calobs = calobs[calobs.dtsm,][tmpIndex,]
+    calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+    rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
+    calobs.dtsm = match(plotTime, calobs.date0)
+    DTStable = dailyTimeSeries(plotTime)
+    matchYears = range(DTStable$wy)
+    
+    ## scanning model results
+    tryCatch({
+        ##......... function calling
+        w = modelFittness( as.numeric(calobs[calobs.dtsm,'mmd']), rhessys_SingleFile[rhessys.dtsm,], DTStable);
+        print(round(w$FittnessList,2))
+    }, error = function(e){
+        print(paste('file', passedArgList$RHESSysOutput, ' is incorrect/missing/corrupted.'))
+    })#try blocks
+}#funciton
 
-evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=NA, bottomValue=NA){
-    
-    
+
+
+evaluateModel = function(passedArgList, passedArgParamBoundary, topPrecent=1, bottomPrecent=0, topValue=NA, bottomValue=NA){
     
     ## do something about searchParam -- not the best code yet but works for now
-    tmp = names(RHESSysParamBoundaryDefault)
+    tmp = names(passedArgParamBoundary)
     flagname = paste(substr(tmp,1,nchar(tmp)-1) , gsub('[0-9]','',substr(tmp,nchar(tmp),nchar(tmp)) ), sep='')
     hold = tapply(tmp, flagname, function(xx){ seq_along(xx) });
     hold.name = names(hold)
@@ -151,13 +218,12 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=
 		calobs = calobs[calobs_boundary_cond, ]
 	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
 	
-	
+	## suffix for the output file
 	suffix = '_';
     if(topPrecent<1 | bottomPrecent>0) suffix = paste('',gsub('\\.','', bottomPrecent), gsub('\\.','',topPrecent),'',sep='_')
 	
+	## scanning job script 
 	path2Runscript = ifelse(grepl('/',passedArgList$runScript), passedArgList$runScript, paste(passedArgList$projPath, passedArgList$RHESSysModel,passedArgList$runScript ,sep='/'))
-	
-	
 	runs = read.table(text = gsub('\'',' ',readLines(path2Runscript)), stringsAsFactors=F )
 		## if a new parameters, we need to update here
 		
@@ -175,6 +241,8 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=
 		itrIndex = seq_along(runs[1,])[grepl('^output[a-zA-Z0-9_/]+rhessys[0-9]+$',runs[1,])]
 		Itr = as.numeric(sapply(gsub("[a-z]", "", runs[, itrIndex]),function(str){ unlist(strsplit(str,'/'))[2] }))
 		
+		
+	## scanning model results initially	
     path2modelresults = ifelse(grepl('/',passedArgList$RHESSysOutput), passedArgList$RHESSysOutput, paste(passedArgList$projPath, passedArgList$RHESSysModel, passedArgList$RHESSysOutput,sep='/'))
 	i=1
 	rhessys_SingleFile = read.table(paste(path2modelresults, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/'),header=T,sep=' ')
@@ -183,10 +251,24 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=
 	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
 	calobs.dtsm = match(plotTime, calobs.date0)
 	
-	##--------------- take out top-2% streamflow > precip condition ----------------##
-	problemCond = calobs[calobs.dtsm,'mmd']>quantile(calobs[calobs.dtsm,'mmd'],0.98) & calobs[calobs.dtsm,'mmd']>rhessys_SingleFile[rhessys.dtsm,'precip']
-	
-	calobs = calobs[calobs.dtsm,][!problemCond,]
+	##--------------- take out top-0.1% streamflow > precip condition ----------------##
+	tmpIndex = seq_along(calobs[calobs.dtsm,'mmd'])
+	problemCond = (calobs[calobs.dtsm,'mmd']>quantile(calobs[calobs.dtsm,'mmd'],0.99) | calobs[calobs.dtsm,'mmd']>10) 
+	problemCond = problemCond[tmpIndex[problemCond]>5] # looking the past 5-day precipitation records
+	rain = rowSums(cbind(rhessys_SingleFile[rhessys.dtsm,'precip'][problemCond],
+		rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-1],
+		rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-2],
+		rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-3],
+		rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-4],
+		rhessys_SingleFile[rhessys.dtsm,'precip'][tmpIndex[problemCond]-5]
+		))
+	runoff_rain_comparison = cbind(
+		index=tmpIndex[problemCond],
+		runoff=calobs[calobs.dtsm,][problemCond,'mmd'],
+		rain=rain)
+	tmpIndex = -runoff_rain_comparison[runoff_rain_comparison[,'runoff'] > runoff_rain_comparison[,'rain'],'index'] # remove these flow data that does not support by precipitation data
+		
+	calobs = calobs[calobs.dtsm,][tmpIndex,]
 	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
 	plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
 	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
@@ -194,7 +276,7 @@ evaluateModel = function(passedArgList, topPrecent=1, bottomPrecent=0, topValue=
 	DTStable = dailyTimeSeries(plotTime)
 	matchYears = range(DTStable$wy)
 	
-	
+	## scanning model results
 	pb <- txtProgressBar(min = 0, max = length(Itr), style = 3)
 	result = sapply(seq_along(Itr),function(i){
 		tryCatch({
