@@ -114,7 +114,7 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 
 
 	#--------------------------------------------
-	fittnessList = rep(NA,24)
+	fittnessList = rep(NA,25)
 	names(fittnessList)=c(
 		"dailyNSE","dailyLogNSE","meanAnnualFlashObs","meanAnnualFlashRHESSys",
 		"weeklyNSE","weeklyLogNSE","inversedweeklyNSE","weeklyCDFfitr2",
@@ -122,12 +122,13 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 		"yearlyNSE","yearlySAE",
 		"bias","wbias","sbias",
 		"totPrecip","totET","totFlow","totFlowObs",
-		"RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP','loglikelihood')
+		"RHESSysRunoffRatio","obsRunoffRatio",'ETbias','flashCOMP','loglikelihood','maxLAI')
 	
 	rhessysDayFlow = rhessys_[,19]#flow
 	rhessysDayRain = rhessys_[,35]#rain
 	rhessysDayET = rhessys_[,14]+rhessys_[,16]#et
-
+    rhessysYearLAI = tapply(rhessys_[,21], rhessys_[,3], max);# lai
+    
 	# ... / ... daily NSE
 			rhessysSS = sum( dailyDataQuality.weight*(calobsDayFlow - rhessysDayFlow)^2 )
 			fittnessList['dailyNSE'] = 1 - rhessysSS/dailyobsSS
@@ -210,7 +211,8 @@ modelFittness = function( calobs_, rhessys_, timeTable_, DailyThreshold_=0){
 			#fittnessList['wbias'] = fittnessList['flashCOMP']/fittnessList['meanAnnualFlashObs'] ## do it for now
 		## 
 		fittnessList['loglikelihood'] = fittness_Overall(fittnessList, fittnessChoice)
-		
+		fittnessList['maxLAI'] = rhessysYearLAI[length(rhessysYearLAI)] //
+        
 		## these below will go away in the future
 		MCMC_fittnessList = rep(NA,10)
 		MCMC_fittnessList[1] = fittnessList['bias']
