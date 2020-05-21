@@ -132,10 +132,7 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
         calobs = calobs[calobs_boundary_cond, ]
     calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
     
-    ## suffix for the output file
-    suffix = '_';
-    if(topPrecent<1 | bottomPrecent>0) suffix = paste('',gsub('\\.','', bottomPrecent), gsub('\\.','',topPrecent),'',sep='_')
-    
+ 
     ## scanning model results initially
     rhessys_SingleFile = read.table(passedArgList$RHESSysOutput,header=T,sep=' ')
     rhessys_SingleFile.date=as.Date(paste(rhessys_SingleFile$day, rhessys_SingleFile$month, rhessys_SingleFile$year,sep="-"),format="%d-%m-%Y")
@@ -184,7 +181,7 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
         mycol = colorFUN(length(plotYears))
         
         dev.new(height=8); par(mar=c(3,4,1,1))
-        layout(matrix(1:3,nrow=3))
+        layout(matrix(1:4,nrow=4))
        	for(iii in seq_along(plotYears)){
      		yearCond = DTStable$year== plotYears[iii]
  	        if(iii>1){
@@ -204,9 +201,17 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
         for(iii in seq_along(plotYears)){
      		yearCond = DTStable$year== plotYears[iii]
  	        if(iii>1){
- 	        	lines(DTStable$doy[yearCond], dlen_ma21[yearCond],col=mycol[iii])
+ 	        	lines(DTStable$doy[yearCond], rhessys_SingleFile$psn[rhessys.dtsm][yearCond],col=mycol[iii])
  	        }else{
- 	        	plot(DTStable$doy[yearCond], dlen_ma21[yearCond], type='l', xlim=c(1,366),lwd=2,col=mycol[iii]); abline(h=10,lty=2,col='gray')
+ 	        	plot(DTStable$doy[yearCond], rhessys_SingleFile$psn[rhessys.dtsm][yearCond], type='l', xlim=c(1,366),lwd=2,col=mycol[iii]); 
+ 	        }
+        }# for iii	
+        for(iii in seq_along(plotYears)){
+     		yearCond = DTStable$year== plotYears[iii]
+ 	        if(iii>1){
+ 	        	lines(DTStable$doy[yearCond], rhessys_SingleFile$laiTREE[rhessys.dtsm][yearCond],col=mycol[iii])
+ 	        }else{
+ 	        	plot(DTStable$doy[yearCond], rhessys_SingleFile$laiTREE[rhessys.dtsm][yearCond], type='l', xlim=c(1,366),lwd=2,col=mycol[iii]); 
  	        }
         }# for iii	
         dev.new(height=0.25*length(plotYears),width=1); par(mar=c(0,0,0,3))
