@@ -12,6 +12,7 @@ RHESSysParamBoundaryDefault $sv1 = c(0.001,20)
 RHESSysParamBoundaryDefault $sv2 = c(0.1,300.0)
 RHESSysParamBoundaryDefault $gw1 = c(0.001,0.2)
 RHESSysParamBoundaryDefault $gw2 = c(0.001,0.2)
+RHESSysParamBoundaryDefault $gw3 = c(0.001,0.2)
 RHESSysParamBoundaryDefault $snowEs = c(0.5,2)
 RHESSysParamBoundaryDefault $snowTs = c(0.5,2)
 RHESSysParamBoundaryDefault $svalt1 = c(0.5,2)
@@ -138,7 +139,7 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
     ## scanning model results initially
     rhessys_SingleFile = read.table(passedArgList$RHESSysOutput,header=T,sep=' ')
     rhessys_SingleFile.date=as.Date(paste(rhessys_SingleFile$day, rhessys_SingleFile$month, rhessys_SingleFile$year,sep="-"),format="%d-%m-%Y")
-    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) 
     rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
     calobs.dtsm = match(plotTime, calobs.date0)
     
@@ -157,20 +158,60 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
         runoff=calobs[calobs.dtsm,][problemCond,'mmd'],
         rain=rain)
     tmpIndex = -runoff_rain_comparison[runoff_rain_comparison[,'runoff'] > runoff_rain_comparison[,'rain'],'index'] # remove these flow data that does not support by precipitation data
-        
-    calobs = calobs[calobs.dtsm,][tmpIndex,]
-    calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
-    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
-    rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
-    calobs.dtsm = match(plotTime, calobs.date0)
+    if(length(tmpIndex)>0){
+    	calobs = calobs[calobs.dtsm,][tmpIndex,]
+    	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+	    plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+	    rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
+	    calobs.dtsm = match(plotTime, calobs.date0)
+    }  # end of if  
     DTStable = dailyTimeSeries(plotTime)
-    matchYears = range(DTStable$wy)
+	matchYears = range(DTStable$wy)
     
     ## scanning model results
     tryCatch({
         ##......... function calling
         w = modelFittness( as.numeric(calobs[calobs.dtsm,'mmd']), rhessys_SingleFile[rhessys.dtsm,], DTStable);
         print(round(w$FittnessList,2))
+        
+        ##----------------------- growth season
+        #rhessys_SingleFile$psi[rhessys.dtsm]
+        tmin_ma21 = movingAverage(rhessys_SingleFile$tmin[rhessys.dtsm],n=21)
+        vpd_ma21 = movingAverage(rhessys_SingleFile$vpd[rhessys.dtsm],n=21)
+        dlen_ma21 = movingAverage(rhessys_SingleFile$dlen[rhessys.dtsm],n=21)/3600 # convert to hours
+        plotYears = unique(DTStable$year)
+        colorFUN = colorRampPalette(c('black','blue','green','brown','orange','red','darkred'))
+        mycol = colorFUN(length(plotYears))
+        
+        dev.new(height=8); par(mar=c(3,4,1,1))
+        layout(matrix(1:3,nrow=3))
+       	for(iii in seq_along(plotYears)){
+     		yearCond = DTStable$year== plotYears[iii]
+ 	        if(iii>1){
+ 	        	lines(DTStable$doy[yearCond], tmin_ma21[yearCond],col=mycol[iii])
+ 	        }else{
+ 	        	plot(DTStable$doy[yearCond], tmin_ma21[yearCond], type='l', xlim=c(1,366),lwd=2, col=mycol[iii])
+ 	        }
+        }# for iii
+        for(iii in seq_along(plotYears)){
+     		yearCond = DTStable$year== plotYears[iii]
+ 	        if(iii>1){
+ 	        	lines(DTStable$doy[yearCond], vpd_ma21[yearCond],col=mycol[iii])
+ 	        }else{
+ 	        	plot(DTStable$doy[yearCond], vpd_ma21[yearCond], type='l', xlim=c(1,366),lwd=2,col=mycol[iii])
+ 	        }
+        }# for iii
+        for(iii in seq_along(plotYears)){
+     		yearCond = DTStable$year== plotYears[iii]
+ 	        if(iii>1){
+ 	        	lines(DTStable$doy[yearCond], dlen_ma21[yearCond],col=mycol[iii])
+ 	        }else{
+ 	        	plot(DTStable$doy[yearCond], dlen_ma21[yearCond], type='l', xlim=c(1,366),lwd=2,col=mycol[iii]); abline(h=10,lty=2,col='gray')
+ 	        }
+        }# for iii	
+        dev.new(height=0.25*length(plotYears),width=1); par(mar=c(0,0,0,3))
+        image(matrix(plotYears,ncol=length(plotYears)), xaxt='n',yaxt='n',col=mycol)
+        axis(4, at=(seq_along(plotYears)-1)/(length(plotYears)-1), labels= plotYears, las=2)
         
         ##---------------------------------------- Diagnosis
 		dev.new(width=14, height=8)
@@ -306,12 +347,13 @@ evaluateModel = function(passedArgList, passedArgParamBoundary, topPrecent=1, bo
 		runoff=calobs[calobs.dtsm,][problemCond,'mmd'],
 		rain=rain)
 	tmpIndex = -runoff_rain_comparison[runoff_rain_comparison[,'runoff'] > runoff_rain_comparison[,'rain'],'index'] # remove these flow data that does not support by precipitation data
-		
-	calobs = calobs[calobs.dtsm,][tmpIndex,]
-	calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
-	plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
-	rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
-	calobs.dtsm = match(plotTime, calobs.date0)
+	if(length(tmpIndex)>0){
+		calobs = calobs[calobs.dtsm,][tmpIndex,]
+		calobs.date0 = as.Date(paste(calobs$day, calobs$month, calobs$year,sep="-"),format="%d-%m-%Y")
+		plotTime = intersectDate(list(rhessys_SingleFile.date, calobs.date0, period)) ## "2010-10-01" "2017-09-30"
+		rhessys.dtsm = match(plotTime, rhessys_SingleFile.date)
+		calobs.dtsm = match(plotTime, calobs.date0)
+	}# end of if
 	DTStable = dailyTimeSeries(plotTime)
 	matchYears = range(DTStable$wy)
 	
