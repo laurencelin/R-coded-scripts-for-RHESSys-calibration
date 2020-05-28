@@ -242,8 +242,10 @@ evaluateModelQuick = function(passedArgList, passedArgParamBoundary, topPrecent=
 		par(mar=c(0,3,0,3))
 		plot(plotTime, rhessys_SingleFile[rhessys.dtsm,'sat_def_z'],type='l', ylab='',xaxt='n',bty='n', ylim=rev(range(rhessys_SingleFile[rhessys.dtsm,'sat_def_z'])))
 		par(mar=c(3,3,0,3))
-		upper = max(rhessys_SingleFile[rhessys.dtsm,'streamflow'],calobs[calobs.dtsm,'mmd'])
-		lower = min(rhessys_SingleFile[rhessys.dtsm,'streamflow'],calobs[calobs.dtsm,'mmd'])
+		
+		trouble = c(rhessys_SingleFile[rhessys.dtsm,'streamflow'],calobs[calobs.dtsm,'mmd'])
+		upper = max(trouble)
+		lower = min(trouble[trouble>0])
 		plot(plotTime, calobs[calobs.dtsm,'mmd'], col='red', type='l',log='y',bty='l', ylim=c(lower ,upper))
 		lines(plotTime, rhessys_SingleFile[rhessys.dtsm,'streamflow'], col='blue' )
 		lines(plotTime, rhessys_SingleFile[rhessys.dtsm,'baseflow'], col='darkblue',lty=2 )
@@ -371,12 +373,12 @@ evaluateModel = function(passedArgList, passedArgParamBoundary, topPrecent=1, bo
 			##......... function calling
 			w = modelFittness( as.numeric(calobs[calobs.dtsm,'mmd']), rhessys_SingleFile[rhessys.dtsm,], DTStable);
 			
-			outputName = paste(path2modelresults,paste("rhessys",Itr[i],"_plot_", matchYears[1],"_",matchYears[2], suffix,"style2.pdf",sep=''),sep="/")
-			modelPlotStyle2( 
-				calobs_  = as.numeric(calobs[calobs.dtsm,'mmd']) , 
-				rhessys_  = rhessys_SingleFile[rhessys.dtsm,] , 
-				dailytimeSeries_ = DTStable , 
-				output = outputName)
+			#outputName = paste(path2modelresults,paste("rhessys",Itr[i],"_plot_", matchYears[1],"_",matchYears[2], suffix,"style2.pdf",sep=''),sep="/")
+			# modelPlotStyle2( 
+				# calobs_  = as.numeric(calobs[calobs.dtsm,'mmd']) , 
+				# rhessys_  = rhessys_SingleFile[rhessys.dtsm,] , 
+				# dailytimeSeries_ = DTStable , 
+				# output = outputName)
 			
 			setTxtProgressBar(pb, i)
 			return <- c(Itr[i],w$FittnessList)
@@ -384,7 +386,7 @@ evaluateModel = function(passedArgList, passedArgParamBoundary, topPrecent=1, bo
 			setTxtProgressBar(pb, i)
 			ff = paste(path2modelresults, paste("rhessys",Itr[i],"_basin.daily",sep='') ,sep='/')
 			print(paste('file', ff, ' is missing/corrupted.'))
-			return <- c(i,rep(NA,24))
+			return <- c(i,rep(NA,25)) # need to upgrade this part in the future
 		})#try blocks
 	})# sapply
 	hold = cbind(runs[, finalparamIndex[!is.na(finalparamIndex)]], t(result));
