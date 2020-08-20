@@ -400,10 +400,10 @@ evaluateModel = function(passedArgList, passedArgParamBoundary, topPrecent=1, bo
 
 
 ##-------------------------------------------------------------------------------------------- clusterAnalysis
-clusterAnalysis = function(fittnessfile){
+clusterAnalysis = function(fittnessfile, passedArgParamBoundary){
 	
     ## do something about searchParam -- not the best code yet but works for now
-    tmp = names(RHESSysParamBoundaryDefault)
+    tmp = names(passedArgParamBoundary)
     flagname = paste(substr(tmp,1,nchar(tmp)-1) , gsub('[0-9]','',substr(tmp,nchar(tmp),nchar(tmp)) ), sep='')
     hold = tapply(tmp, flagname, function(xx){ seq_along(xx) });
     hold.name = names(hold)
@@ -527,7 +527,7 @@ clusterAnalysis = function(fittnessfile){
    	paramList = lapply(seq_len(dim(param.mean)[1]), function(i){
 		return <- sapply(names(param.mean)[-1], function(nn){
 			tmp = rnorm(param.num*10, param.mean[i,nn], param.sd[i,nn])
-			cond = (tmp<max(RHESSysParamBoundaryDefault[,nn]) & tmp>min(RHESSysParamBoundaryDefault[,nn]) )
+			cond = (tmp<max(passedArgParamBoundary[,nn]) & tmp>min(passedArgParamBoundary[,nn]) )
 			return <- tmp[cond][1:param.num]
 		})
 	})# lapply
@@ -537,6 +537,13 @@ clusterAnalysis = function(fittnessfile){
 	for(nn in names(param.mean)[-1]){
 		param[,nn] = as.vector(sapply(seq_len(dim(param.mean)[1]),function(jj){paramList[[jj]][,nn]}))
 	}#nn
+	
+	if(length(param$gw1)>0 & length(param$gw3)>0){
+		gw13ratio = param$gw3/(param$gw1+param$gw3); 
+		gwtotal = 0.5*(param$gw1+param$gw3)
+		param$gw3 = gwtotal * gw13ratio 
+		param$gw1 = gwtotal * (1-gw13ratio) 
+	}#if
 
 	return <- list(param=param, selectedParamSet=hold)
 }#clusterAnalysis
